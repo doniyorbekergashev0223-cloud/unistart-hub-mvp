@@ -24,6 +24,7 @@ const Topbar = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleLogout = () => {
@@ -171,9 +172,59 @@ const Topbar = () => {
     { label: 'Chiqish', type: 'action', action: handleLogout }
   ];
 
+  const toggleSidebar = () => {
+    const newState = !sidebarOpen;
+    setSidebarOpen(newState);
+    // Update sidebar class via DOM (clean approach)
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    if (sidebar && overlay) {
+      if (newState) {
+        sidebar.classList.add('mobile-open');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      } else {
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    }
+  };
+
+  // Close sidebar when clicking overlay
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    
+    const handleOverlayClick = () => {
+      const sidebar = document.querySelector('.sidebar');
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (sidebar && overlay) {
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+        setSidebarOpen(false);
+      }
+    };
+    
+    const overlay = document.querySelector('.sidebar-overlay');
+    if (overlay) {
+      overlay.addEventListener('click', handleOverlayClick);
+      return () => overlay.removeEventListener('click', handleOverlayClick);
+    }
+  }, [sidebarOpen]);
+
   return (
-    <div className="topbar">
-      <div className="topbar-left">
+    <>
+      <div className={`sidebar-overlay ${sidebarOpen ? 'active' : ''}`}></div>
+      <div className="topbar">
+        <button className="mobile-menu-button" onClick={toggleSidebar} aria-label="Menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <div className="topbar-left">
         <div className="search-container">
           <input
             type="text"
@@ -302,6 +353,7 @@ const Topbar = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

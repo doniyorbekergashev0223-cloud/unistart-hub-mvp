@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/db'
 
 export const runtime = 'nodejs'
+// Prevent static generation - this route must be dynamic
+export const dynamic = 'force-dynamic'
 
 function jsonError(status: number, code: string, message: string, details?: unknown) {
   return NextResponse.json(

@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,17 @@ import '../styles/Sidebar.css';
 const Sidebar = () => {
   const { user, isAuthenticated } = useAuth();
   const pathname = usePathname();
+
+  // Close sidebar on mobile when route changes
+  useEffect(() => {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    if (sidebar && overlay) {
+      sidebar.classList.remove('mobile-open');
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }, [pathname]);
 
   const items = [
     { label: 'Boshqaruv paneli', href: '/' },
