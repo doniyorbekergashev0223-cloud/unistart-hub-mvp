@@ -11,18 +11,70 @@ type GlobalWithPrisma = typeof globalThis & {
   __unistartPrisma?: PrismaClient
 }
 
-export function getPrisma(): PrismaClient | null {
-  if (!process.env.DATABASE_URL) {
-    console.error('DATABASE_URL environment variable is not set')
-    return null
+/**
+ * Validates and normalizes DATABASE_URL
+ * Handles URL encoding issues and validates format
+ */
+function validateAndNormalizeDatabaseUrl(url: string): { valid: boolean; normalized?: string; error?: string } {
+  if (!url || typeof url !== 'string') {
+    return { valid: false, error: 'DATABASE_URL is empty or not a string' }
   }
 
-  // Placeholder tekshiruvi (xavfsizlik uchun)
-  if (
-    process.env.DATABASE_URL.includes('[YOUR_PASSWORD]') ||
-    process.env.DATABASE_URL.includes('YOUR_')
-  ) {
-    console.error('DATABASE_URL contains placeholder values')
+  // Remove leading/trailing whitespace
+  const trimmed = url.trim()
+  if (!trimmed) {
+    return { valid: false, error: 'DATABASE_URL is empty after trimming' }
+  }
+
+  // Check for placeholders
+  if (trimmed.includes('[YOUR_PASSWORD]') || trimmed.includes('YOUR_')) {
+    return { valid: false, error: 'DATABASE_URL contains placeholder values' }
+  }
+
+  try {
+    // Try to parse the URL to validate format
+    const urlObj = new URL(trimmed)
+    
+    // Validate it's a postgresql URL
+    if (urlObj.protocol !== 'postgresql:' && urlObj.protocol !== 'postgres:') {
+      return { valid: false, error: `Invalid protocol: ${urlObj.protocol}. Expected postgresql: or postgres:` }
+    }
+
+    // Check if password needs URL encoding
+    // If password contains special characters that aren't encoded, we need to encode them
+    const password = urlObj.password
+    if (password) {
+      // Check for unencoded special characters
+      const specialChars = /[@#%&+=\s]/
+      if (specialChars.test(password)) {
+        // Password might need encoding, but we'll let Prisma handle it
+        // Just log a warning
+        console.warn('⚠️ DATABASE_URL password contains special characters. Ensure they are URL-encoded if authentication fails.')
+      }
+    }
+
+    // Validate port
+    const port = urlObj.port || (urlObj.protocol === 'postgresql:' ? '5432' : '5432')
+    if (port === '6543' || trimmed.includes('pgbouncer=true')) {
+      return { 
+        valid: false, 
+        error: 'DATABASE_URL uses Session Pooler (port 6543). Use Direct Connection (port 5432) for Vercel. See CRITICAL_DATABASE_FIX.md' 
+      }
+    }
+
+    // Return normalized URL (trimmed)
+    return { valid: true, normalized: trimmed }
+  } catch (parseError: any) {
+    return { 
+      valid: false, 
+      error: `Invalid DATABASE_URL format: ${parseError.message}` 
+    }
+  }
+}
+
+export function getPrisma(): PrismaClient | null {
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL environment variable is not set')
     return null
   }
 
@@ -30,25 +82,37 @@ export function getPrisma(): PrismaClient | null {
 
   if (!globalForPrisma.__unistartPrisma) {
     try {
-      // Check if DATABASE_URL uses Session Pooler (port 6543) - this causes connection limit issues
-      const dbUrl = process.env.DATABASE_URL || ''
+      // Validate and normalize DATABASE_URL
+      const validation = validateAndNormalizeDatabaseUrl(process.env.DATABASE_URL)
       
-      if (dbUrl.includes(':6543') || dbUrl.includes('pgbouncer=true')) {
-        console.error('❌ CRITICAL ERROR: DATABASE_URL uses Session Pooler (port 6543).')
-        console.error('❌ This causes "max clients reached" errors on Vercel.')
-        console.error('❌ Please use Direct Connection (port 5432) in Vercel environment variables.')
-        console.error('❌ See CRITICAL_DATABASE_FIX.md for instructions.')
-        // Don't create client if using Session Pooler - it will fail anyway
-        throw new Error('DATABASE_URL must use Direct Connection (port 5432), not Session Pooler (port 6543)')
+      if (!validation.valid) {
+        console.error('❌ DATABASE_URL validation failed:', validation.error)
+        return null
       }
 
-      // Log connection info for debugging
-      console.log('Database connection info:', {
-        hasUrl: !!dbUrl,
-        urlLength: dbUrl.length,
-        usesDirectConnection: dbUrl.includes(':5432') && !dbUrl.includes(':6543'),
-        usesSessionPooler: dbUrl.includes(':6543') || dbUrl.includes('pgbouncer=true'),
-      })
+      const dbUrl = validation.normalized!
+
+      // Log connection info for debugging (without exposing password)
+      try {
+        const urlObj = new URL(dbUrl)
+        console.log('✅ Database connection info:', {
+          hasUrl: true,
+          protocol: urlObj.protocol,
+          hostname: urlObj.hostname,
+          port: urlObj.port || '5432',
+          database: urlObj.pathname.slice(1) || 'postgres',
+          username: urlObj.username || 'postgres',
+          hasPassword: !!urlObj.password,
+          passwordLength: urlObj.password ? urlObj.password.length : 0,
+          usesDirectConnection: (urlObj.port || '5432') === '5432' && !dbUrl.includes('pgbouncer=true'),
+          urlLength: dbUrl.length,
+        })
+      } catch (logError) {
+        console.log('Database connection info (partial):', {
+          hasUrl: true,
+          urlLength: dbUrl.length,
+        })
+      }
 
       globalForPrisma.__unistartPrisma = new PrismaClient({
         log:
@@ -77,8 +141,10 @@ export function getPrisma(): PrismaClient | null {
         process.on('SIGINT', cleanup)
         process.on('SIGTERM', cleanup)
       }
-    } catch (error) {
-      console.error('Failed to initialize Prisma Client:', error)
+    } catch (error: any) {
+      console.error('❌ Failed to initialize Prisma Client:', error)
+      console.error('Error message:', error?.message)
+      console.error('Error code:', error?.code)
       return null
     }
   }

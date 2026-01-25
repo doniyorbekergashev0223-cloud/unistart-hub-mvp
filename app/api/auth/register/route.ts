@@ -77,10 +77,39 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, data: { user: result } }, { status: 201 })
   } catch (e: any) {
+    console.error('Register error:', e)
+    console.error('Error type:', e?.constructor?.name)
+    console.error('Error code:', e?.code)
+    console.error('Error message:', e?.message)
+    
     // Prisma unique constraint (email)
     if (typeof e?.code === 'string' && e.code === 'P2002') {
       return jsonError(409, 'EMAIL_ALREADY_EXISTS', 'Bu email allaqachon ro‘yxatdan o‘tgan.')
     }
+    
+    // Check for authentication errors
+    if (e?.message?.includes('Authentication failed') || 
+        e?.message?.includes('provided database credentials') ||
+        e?.message?.includes('password authentication failed') ||
+        e?.code === 'P1000') {
+      console.error('❌ DATABASE AUTHENTICATION ERROR: Invalid credentials in DATABASE_URL')
+      return jsonError(
+        503,
+        'DATABASE_AUTHENTICATION_ERROR',
+        "Ma'lumotlar bazasi autentifikatsiya xatosi. Iltimos, Vercel'da DATABASE_URL ni tekshiring: parol to'g'ri, maxsus belgilar URL-encode qilingan bo'lishi kerak. DATABASE_AUTHENTICATION_FIX.md faylini ko'ring."
+      )
+    }
+    
+    // Check for connection limit errors
+    if (e?.message?.includes('MaxClientsInSessionMode') || 
+        e?.message?.includes('max clients reached')) {
+      return jsonError(
+        503,
+        'DATABASE_CONNECTION_LIMIT',
+        "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+      )
+    }
+    
     return jsonError(500, 'INTERNAL_ERROR', 'Server xatoligi yuz berdi.')
   }
 }

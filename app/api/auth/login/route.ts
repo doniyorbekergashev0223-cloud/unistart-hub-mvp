@@ -58,14 +58,44 @@ export async function POST(req: Request) {
       })
     } catch (dbError: any) {
       console.error('Database query error:', dbError)
+      console.error('Error type:', dbError?.constructor?.name)
+      console.error('Error code:', dbError?.code)
+      console.error('Error message:', dbError?.message)
       
-      // Check for specific connection errors
+      // Check for authentication errors
+      if (dbError?.message?.includes('Authentication failed') || 
+          dbError?.message?.includes('provided database credentials') ||
+          dbError?.message?.includes('password authentication failed') ||
+          dbError?.code === 'P1000') {
+        console.error('❌ DATABASE AUTHENTICATION ERROR: Invalid credentials in DATABASE_URL')
+        console.error('❌ Please check:')
+        console.error('   1. Database password is correct in Vercel environment variables')
+        console.error('   2. Special characters in password are URL-encoded (@ → %40, # → %23, etc.)')
+        console.error('   3. Username format is correct (postgres.PROJECT-REF)')
+        return jsonError(
+          503,
+          'DATABASE_AUTHENTICATION_ERROR',
+          "Ma'lumotlar bazasi autentifikatsiya xatosi. Iltimos, Vercel'da DATABASE_URL ni tekshiring: parol to'g'ri, maxsus belgilar URL-encode qilingan bo'lishi kerak. DATABASE_AUTHENTICATION_FIX.md faylini ko'ring."
+        )
+      }
+      
+      // Check for connection limit errors
       if (dbError?.message?.includes('MaxClientsInSessionMode') || 
           dbError?.message?.includes('max clients reached')) {
         return jsonError(
           503,
           'DATABASE_CONNECTION_LIMIT',
           "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+        )
+      }
+      
+      // Check for connection errors
+      if (dbError?.message?.includes("Can't reach database server") ||
+          dbError?.code === 'P1001') {
+        return jsonError(
+          503,
+          'DATABASE_CONNECTION_ERROR',
+          "Ma'lumotlar bazasi serveriga ulanib bo'lmadi. Iltimos, DATABASE_URL ni tekshiring."
         )
       }
       

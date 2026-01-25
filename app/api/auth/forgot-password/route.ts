@@ -69,21 +69,26 @@ export async function POST(req: Request) {
       })
     } catch (dbError: any) {
       console.error('Database query error in forgot-password:', dbError)
+      console.error('Error type:', dbError?.constructor?.name)
+      console.error('Error code:', dbError?.code)
+      
+      // Check for authentication errors (log but still return success for security)
+      if (dbError?.message?.includes('Authentication failed') || 
+          dbError?.message?.includes('provided database credentials') ||
+          dbError?.message?.includes('password authentication failed') ||
+          dbError?.code === 'P1000') {
+        console.error('❌ DATABASE AUTHENTICATION ERROR: Invalid credentials in DATABASE_URL')
+        console.error('❌ Please check DATABASE_URL in Vercel: password correct, special characters URL-encoded')
+        // Still return success for security (don't reveal system state)
+      }
       
       // Check for connection limit errors
       if (dbError?.message?.includes('MaxClientsInSessionMode') || 
           dbError?.message?.includes('max clients reached')) {
-        // Still return success for security, but log the error
         console.error('❌ CRITICAL: Database connection limit reached. Fix DATABASE_URL in Vercel.')
-        return NextResponse.json({
-          ok: true,
-          data: {
-            message: "Agar bu email ro'yxatdan o'tgan bo'lsa, parolni tiklash kodi yuborildi.",
-          },
-        })
       }
       
-      // For other errors, still return success (security)
+      // Always return success for security (don't reveal if email exists)
       return NextResponse.json({
         ok: true,
         data: {

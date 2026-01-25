@@ -82,6 +82,21 @@ export async function POST(req: Request) {
       })
     } catch (dbError: any) {
       console.error('Database query error in reset-password (find user):', dbError)
+      console.error('Error type:', dbError?.constructor?.name)
+      console.error('Error code:', dbError?.code)
+      
+      // Check for authentication errors
+      if (dbError?.message?.includes('Authentication failed') || 
+          dbError?.message?.includes('provided database credentials') ||
+          dbError?.message?.includes('password authentication failed') ||
+          dbError?.code === 'P1000') {
+        console.error('❌ DATABASE AUTHENTICATION ERROR: Invalid credentials in DATABASE_URL')
+        return jsonError(
+          503,
+          'DATABASE_AUTHENTICATION_ERROR',
+          "Ma'lumotlar bazasi autentifikatsiya xatosi. Iltimos, Vercel'da DATABASE_URL ni tekshiring: parol to'g'ri, maxsus belgilar URL-encode qilingan bo'lishi kerak. DATABASE_AUTHENTICATION_FIX.md faylini ko'ring."
+        )
+      }
       
       // Check for connection limit errors
       if (dbError?.message?.includes('MaxClientsInSessionMode') || 
@@ -116,7 +131,22 @@ export async function POST(req: Request) {
         orderBy: { createdAt: 'desc' },
       })
     } catch (dbError: any) {
-      console.error('Database query error in reset-password:', dbError)
+      console.error('Database query error in reset-password (find reset record):', dbError)
+      console.error('Error type:', dbError?.constructor?.name)
+      console.error('Error code:', dbError?.code)
+      
+      // Check for authentication errors
+      if (dbError?.message?.includes('Authentication failed') || 
+          dbError?.message?.includes('provided database credentials') ||
+          dbError?.message?.includes('password authentication failed') ||
+          dbError?.code === 'P1000') {
+        console.error('❌ DATABASE AUTHENTICATION ERROR: Invalid credentials in DATABASE_URL')
+        return jsonError(
+          503,
+          'DATABASE_AUTHENTICATION_ERROR',
+          "Ma'lumotlar bazasi autentifikatsiya xatosi. Iltimos, Vercel'da DATABASE_URL ni tekshiring: parol to'g'ri, maxsus belgilar URL-encode qilingan bo'lishi kerak. DATABASE_AUTHENTICATION_FIX.md faylini ko'ring."
+        )
+      }
       
       // Check for connection limit errors
       if (dbError?.message?.includes('MaxClientsInSessionMode') || 
