@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { logAuditEvent, getClientIp, getUserAgent } from '@/lib/audit';
-import { AuditLogAction } from '@prisma/client';
 
 export const runtime = 'nodejs';
 
@@ -21,7 +20,7 @@ export async function POST(req: Request) {
     // Log logout event
     await logAuditEvent(
       userId,
-      AuditLogAction.LOGOUT,
+      'LOGOUT',
       getClientIp(req),
       getUserAgent(req)
     );

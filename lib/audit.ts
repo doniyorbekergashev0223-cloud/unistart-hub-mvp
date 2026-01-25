@@ -1,5 +1,5 @@
 import { getPrisma } from './db';
-import { AuditLogAction } from '@prisma/client';
+type AuditLogAction = 'LOGIN' | 'LOGOUT' | 'REGISTER';
 
 export async function logAuditEvent(
   userId: string,
@@ -36,7 +36,7 @@ export function getClientIp(req: Request): string | undefined {
   if (forwarded) {
     return forwarded.split(',')[0].trim();
   }
-  
+
   const realIp = req.headers.get('x-real-ip');
   if (realIp) {
     return realIp;
