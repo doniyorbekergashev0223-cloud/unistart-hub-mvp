@@ -362,8 +362,8 @@ const Topbar = () => {
                 ) : item.type === 'info' ? (
                   <div key={index} className={`dropdown-item ${item.type}`}>
                     <div style={{
-                      width: '40px',
-                      height: '40px',
+                      width: '48px',
+                      height: '48px',
                       borderRadius: '50%',
                       background: (user as any)?.avatarUrl 
                         ? `url(${(user as any).avatarUrl})` 
@@ -374,14 +374,15 @@ const Topbar = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: 'white',
-                      fontWeight: 600,
-                      fontSize: '1rem',
+                      fontWeight: 700,
+                      fontSize: '1.125rem',
                       flexShrink: 0,
-                      border: '2px solid rgba(102, 126, 234, 0.2)',
+                      border: '3px solid rgba(255, 255, 255, 0.3)',
+                      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
                     }}>
                       {!(user as any)?.avatarUrl && ((item as any).initials || 'U')}
                     </div>
-                    <span style={{ marginLeft: '0.75rem' }}>{item.label}</span>
+                    <span>{item.label}</span>
                   </div>
                 ) : (
                   <div key={index} className={`dropdown-item ${item.type}`}>
