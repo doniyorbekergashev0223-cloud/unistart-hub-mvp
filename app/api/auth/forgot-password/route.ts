@@ -108,7 +108,11 @@ export async function POST(req: Request) {
 
     // Send email with reset code
     // If email fails, we still return success (code is stored, user can request again)
-    await sendPasswordResetCode(user.email, code)
+    const emailSent = await sendPasswordResetCode(user.email, code)
+    if (!emailSent) {
+      console.error(`Failed to send password reset email to ${user.email}. Code generated: ${code}`)
+      // Note: We still return success for security, but log the failure
+    }
 
     return NextResponse.json({
       ok: true,

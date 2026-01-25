@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export type UserRole = 'user' | 'admin' | 'expert';
 
@@ -17,6 +17,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, role: UserRole) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +29,8 @@ export const useAuth = () => {
   }
   return context;
 };
+
+const STORAGE_KEY = 'unistart_auth_user';
 
 type ApiError = { code: string; message: string; details?: unknown };
 type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: ApiError };
@@ -58,6 +61,68 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Restore user from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsedUser = JSON.parse(stored) as User;
+        // Verify session is still valid by checking with API
+        verifySession(parsedUser).then((isValid) => {
+          if (isValid) {
+            setUser(parsedUser);
+          } else {
+            localStorage.removeItem(STORAGE_KEY);
+          }
+          setIsLoading(false);
+        });
+      } else {
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Failed to restore session:', error);
+      localStorage.removeItem(STORAGE_KEY);
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Verify session with backend
+  const verifySession = async (user: User): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/verify', {
+        method: 'GET',
+        headers: {
+          'x-user-id': user.id,
+          'x-user-role': user.role,
+        },
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  };
+
+  // Save user to localStorage
+  const saveUser = (userData: User) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+      setUser(userData);
+    } catch (error) {
+      console.error('Failed to save user to localStorage:', error);
+    }
+  };
+
+  // Remove user from localStorage
+  const removeUser = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      setUser(null);
+    } catch (error) {
+      console.error('Failed to remove user from localStorage:', error);
+    }
+  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     const response = await postJson<{ user: { id: string; name: string; email: string; role: UserRole } }>(
@@ -66,7 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     );
 
     if (response?.ok) {
-      setUser(response.data.user);
+      saveUser(response.data.user);
       return true;
     }
 
@@ -80,15 +145,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     );
 
     if (response?.ok) {
-      setUser(response.data.user);
+      saveUser(response.data.user);
       return true;
     }
 
     return false;
   };
 
-  const logout = () => {
-    setUser(null);
+  const logout = async () => {
+    // Call logout API to invalidate session on server
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+    }
+    removeUser();
   };
 
   const value: AuthContextType = {
@@ -96,7 +167,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    isLoading,
   };
 
   return (

@@ -17,20 +17,53 @@ interface EmailConfig {
 }
 
 function getEmailConfig(): EmailConfig | null {
-  const host = process.env.SMTP_HOST
-  const port = process.env.SMTP_PORT
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
+  // Trim whitespace and newlines from environment variables
+  // This fixes issues where Vercel environment variables have trailing newlines
+  const host = process.env.SMTP_HOST?.trim()
+  const port = process.env.SMTP_PORT?.trim()
+  const user = process.env.SMTP_USER?.trim()
+  const pass = process.env.SMTP_PASS?.trim()
 
   if (!host || !port || !user || !pass) {
-    console.warn('SMTP configuration incomplete. Email sending disabled.')
+    console.warn('SMTP configuration incomplete. Email sending disabled.', {
+      hasHost: !!host,
+      hasPort: !!port,
+      hasUser: !!user,
+      hasPass: !!pass,
+    })
     return null
+  }
+
+  const portNum = parseInt(port, 10)
+  if (isNaN(portNum)) {
+    console.error(`Invalid SMTP_PORT: ${port}. Must be a number.`)
+    return null
+  }
+
+  // Validate port number
+  if (portNum !== 465 && portNum !== 587) {
+    console.warn(`SMTP_PORT ${portNum} is not standard. Using ${portNum === 465 ? 'SSL' : 'TLS'} mode.`)
+  }
+
+  console.log('SMTP configuration loaded:', {
+    host,
+    port: portNum,
+    user,
+    secure: portNum === 465,
+    passLength: pass.length,
+    hostLength: host.length,
+  })
+
+  // Log warning if host contains newlines (common Vercel issue)
+  if (host.includes('\n') || host.includes('\r')) {
+    console.warn('⚠️ WARNING: SMTP_HOST contains newline characters! This will cause DNS errors.')
+    console.warn('⚠️ Fix: Remove trailing newlines from SMTP_HOST in Vercel environment variables.')
   }
 
   return {
     host,
-    port: parseInt(port, 10),
-    secure: port === '465', // 465 = SSL, 587 = TLS
+    port: portNum,
+    secure: portNum === 465, // 465 = SSL, 587 = TLS
     auth: {
       user,
       pass,
@@ -132,11 +165,50 @@ Agar siz bu so'rovni qilmagan bo'lsangiz, bu xatni e'tiborsiz qoldiring.
   }
 
   try {
-    await transporter.sendMail(mailOptions)
-    console.log(`Password reset code sent to ${email}`)
+    console.log('Attempting to verify SMTP connection...')
+    // Verify connection before sending
+    await transporter.verify()
+    console.log('✅ SMTP connection verified successfully')
+    
+    console.log('Attempting to send email...')
+    // Send email
+    const info = await transporter.sendMail(mailOptions)
+    console.log(`✅ Password reset code sent to ${email}`, {
+      messageId: info.messageId,
+      response: info.response,
+      accepted: info.accepted,
+      rejected: info.rejected,
+    })
     return true
-  } catch (error) {
-    console.error('Failed to send password reset email:', error)
+  } catch (error: any) {
+    // Detailed error logging for debugging
+    console.error('❌ Failed to send password reset email:', {
+      error: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode,
+      errno: error.errno,
+      syscall: error.syscall,
+      hostname: error.hostname,
+      port: error.port,
+      address: error.address,
+      stack: error.stack,
+    })
+
+    // Common error messages and solutions
+    if (error.code === 'EAUTH') {
+      console.error('🔐 Authentication failed. Check:')
+      console.error('  1. SMTP_USER is correct email address')
+      console.error('  2. SMTP_PASS is Gmail App Password (not regular password)')
+      console.error('  3. 2-Step Verification is enabled on Gmail account')
+    } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+      console.error('🌐 Connection failed. Check:')
+      console.error('  1. SMTP_HOST is correct (smtp.gmail.com)')
+      console.error('  2. SMTP_PORT is correct (587 for TLS or 465 for SSL)')
+      console.error('  3. Firewall is not blocking the connection')
+    }
+
     return false
   }
 }

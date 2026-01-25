@@ -9,17 +9,18 @@ interface AuthGuardProps {
 }
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Wait for session restore to complete before redirecting
+    if (!isLoading && !isAuthenticated) {
       router.push('/auth/login');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoading, router]);
 
-  // Show nothing while redirecting
-  if (!isAuthenticated) {
+  // Show nothing while loading or redirecting
+  if (isLoading || !isAuthenticated) {
     return null;
   }
 
