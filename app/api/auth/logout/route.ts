@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+
 import { logAuditEvent, getClientIp, getUserAgent } from '@/lib/audit';
+
 
 export const runtime = 'nodejs';
 
@@ -31,6 +33,8 @@ export async function POST(req: Request) {
 
     // Logout successful (audit logging removed as AuditLog model doesn't exist in schema)
 
+
+    // Logout successful (audit logging removed as AuditLog model doesn't exist in schema)
     return NextResponse.json({ ok: true, data: { message: 'Muvaffaqiyatli chiqildi' } });
   } catch (error) {
     console.error('Logout error:', error);
