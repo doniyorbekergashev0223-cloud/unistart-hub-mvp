@@ -85,6 +85,18 @@ export async function POST(req: Request) {
       console.error('Error type:', dbError?.constructor?.name)
       console.error('Error code:', dbError?.code)
       
+      // Check for "Tenant or user not found" error (Supabase username format issue)
+      if (dbError?.message?.includes('Tenant or user not found') ||
+          dbError?.message?.includes('tenant or user not found')) {
+        console.error('❌ CRITICAL ERROR: "Tenant or user not found"')
+        console.error('❌ This means DATABASE_URL username format is incorrect for Supabase')
+        return jsonError(
+          503,
+          'DATABASE_TENANT_ERROR',
+          "Ma'lumotlar bazasi username formati noto'g'ri. Supabase uchun username 'postgres.PROJECT-REF' formatida bo'lishi kerak. TENANT_USER_FIX.md faylini ko'ring."
+        )
+      }
+      
       // Check for authentication errors
       if (dbError?.message?.includes('Authentication failed') || 
           dbError?.message?.includes('provided database credentials') ||
@@ -134,6 +146,18 @@ export async function POST(req: Request) {
       console.error('Database query error in reset-password (find reset record):', dbError)
       console.error('Error type:', dbError?.constructor?.name)
       console.error('Error code:', dbError?.code)
+      
+      // Check for "Tenant or user not found" error (Supabase username format issue)
+      if (dbError?.message?.includes('Tenant or user not found') ||
+          dbError?.message?.includes('tenant or user not found')) {
+        console.error('❌ CRITICAL ERROR: "Tenant or user not found"')
+        console.error('❌ This means DATABASE_URL username format is incorrect for Supabase')
+        return jsonError(
+          503,
+          'DATABASE_TENANT_ERROR',
+          "Ma'lumotlar bazasi username formati noto'g'ri. Supabase uchun username 'postgres.PROJECT-REF' formatida bo'lishi kerak. TENANT_USER_FIX.md faylini ko'ring."
+        )
+      }
       
       // Check for authentication errors
       if (dbError?.message?.includes('Authentication failed') || 

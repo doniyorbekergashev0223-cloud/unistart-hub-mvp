@@ -71,6 +71,7 @@ export async function POST(req: Request) {
         name: true,
         email: true,
         role: true,
+        avatarUrl: true,
         createdAt: true,
       },
     })
@@ -85,6 +86,19 @@ export async function POST(req: Request) {
     // Prisma unique constraint (email)
     if (typeof e?.code === 'string' && e.code === 'P2002') {
       return jsonError(409, 'EMAIL_ALREADY_EXISTS', 'Bu email allaqachon ro‘yxatdan o‘tgan.')
+    }
+    
+    // Check for "Tenant or user not found" error (Supabase username format issue)
+    if (e?.message?.includes('Tenant or user not found') ||
+        e?.message?.includes('tenant or user not found')) {
+      console.error('❌ CRITICAL ERROR: "Tenant or user not found"')
+      console.error('❌ This means DATABASE_URL username format is incorrect for Supabase')
+      console.error('❌ Supabase requires username format: postgres.PROJECT-REF')
+      return jsonError(
+        503,
+        'DATABASE_TENANT_ERROR',
+        "Ma'lumotlar bazasi username formati noto'g'ri. Supabase uchun username 'postgres.PROJECT-REF' formatida bo'lishi kerak. TENANT_USER_FIX.md faylini ko'ring."
+      )
     }
     
     // Check for authentication errors

@@ -62,6 +62,22 @@ function validateAndNormalizeDatabaseUrl(url: string): { valid: boolean; normali
       }
     }
 
+    // Validate username format for Supabase
+    // Supabase requires username in format: postgres.PROJECT-REF
+    // NOT just "postgres" - this causes "Tenant or user not found" error
+    const username = urlObj.username || ''
+    if (username === 'postgres' && urlObj.hostname.includes('supabase')) {
+      return {
+        valid: false,
+        error: 'DATABASE_URL username is "postgres" but Supabase requires "postgres.PROJECT-REF" format. This causes "Tenant or user not found" error. Get the correct connection string from Supabase Dashboard → Settings → Database → Direct Connection. See TENANT_USER_FIX.md'
+      }
+    }
+
+    // Check if username looks like Supabase format (postgres.xxx)
+    if (urlObj.hostname.includes('supabase') && !username.includes('.')) {
+      console.warn('⚠️ WARNING: Username format may be incorrect for Supabase. Expected format: postgres.PROJECT-REF')
+    }
+
     // Return normalized URL (trimmed)
     return { valid: true, normalized: trimmed }
   } catch (parseError: any) {
@@ -95,18 +111,32 @@ export function getPrisma(): PrismaClient | null {
       // Log connection info for debugging (without exposing password)
       try {
         const urlObj = new URL(dbUrl)
+        const username = urlObj.username || 'postgres'
+        const isSupabase = urlObj.hostname.includes('supabase')
+        const usernameFormatCorrect = isSupabase ? username.includes('.') && username.startsWith('postgres.') : true
+        
         console.log('✅ Database connection info:', {
           hasUrl: true,
           protocol: urlObj.protocol,
           hostname: urlObj.hostname,
           port: urlObj.port || '5432',
           database: urlObj.pathname.slice(1) || 'postgres',
-          username: urlObj.username || 'postgres',
+          username: username,
+          usernameFormatCorrect: usernameFormatCorrect,
+          isSupabase: isSupabase,
           hasPassword: !!urlObj.password,
           passwordLength: urlObj.password ? urlObj.password.length : 0,
           usesDirectConnection: (urlObj.port || '5432') === '5432' && !dbUrl.includes('pgbouncer=true'),
           urlLength: dbUrl.length,
         })
+        
+        if (isSupabase && !usernameFormatCorrect) {
+          console.error('❌ CRITICAL: Username format is incorrect for Supabase!')
+          console.error('❌ Current username:', username)
+          console.error('❌ Expected format: postgres.PROJECT-REF')
+          console.error('❌ This will cause "Tenant or user not found" error')
+          console.error('❌ Get correct connection string from: Supabase Dashboard → Settings → Database → Direct Connection')
+        }
       } catch (logError) {
         console.log('Database connection info (partial):', {
           hasUrl: true,

@@ -52,6 +52,7 @@ export async function POST(req: Request) {
           name: true,
           email: true,
           role: true,
+          avatarUrl: true,
           createdAt: true,
           passwordHash: true,
         },
@@ -61,6 +62,21 @@ export async function POST(req: Request) {
       console.error('Error type:', dbError?.constructor?.name)
       console.error('Error code:', dbError?.code)
       console.error('Error message:', dbError?.message)
+      
+      // Check for "Tenant or user not found" error (Supabase username format issue)
+      if (dbError?.message?.includes('Tenant or user not found') ||
+          dbError?.message?.includes('tenant or user not found')) {
+        console.error('❌ CRITICAL ERROR: "Tenant or user not found"')
+        console.error('❌ This means DATABASE_URL username format is incorrect for Supabase')
+        console.error('❌ Supabase requires username format: postgres.PROJECT-REF')
+        console.error('❌ NOT just "postgres"')
+        console.error('❌ Fix: Get connection string from Supabase Dashboard → Settings → Database → Direct Connection')
+        return jsonError(
+          503,
+          'DATABASE_TENANT_ERROR',
+          "Ma'lumotlar bazasi username formati noto'g'ri. Supabase uchun username 'postgres.PROJECT-REF' formatida bo'lishi kerak (faqat 'postgres' emas). Supabase Dashboard → Settings → Database → Direct Connection dan to'g'ri connection string oling. TENANT_USER_FIX.md faylini ko'ring."
+        )
+      }
       
       // Check for authentication errors
       if (dbError?.message?.includes('Authentication failed') || 

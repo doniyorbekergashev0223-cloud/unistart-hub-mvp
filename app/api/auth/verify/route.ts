@@ -21,10 +21,10 @@ export async function GET(req: Request) {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, email: true, name: true, role: true },
-    })
+                const user = await prisma.user.findUnique({
+                  where: { id: userId },
+                  select: { id: true, email: true, name: true, role: true, avatarUrl: true },
+                })
 
     if (!user || user.role !== userRole) {
       return NextResponse.json({ ok: false, error: { code: 'INVALID_SESSION', message: 'Session not valid' } }, { status: 401 })
