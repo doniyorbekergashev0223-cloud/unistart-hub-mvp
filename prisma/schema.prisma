@@ -56,7 +56,6 @@ model ProjectComment {
 
   @@index([projectId])
   @@index([createdAt])
-<<<<<<< Updated upstream
 }
 
 model Notification {
@@ -71,9 +70,11 @@ model Notification {
 }
 
 enum UserRole {
-=======
+
 }enum UserRole {
->>>>>>> Stashed changes
+
+}enum UserRole {
+
   user
   admin
   expert

@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-<<<<<<< Updated upstream
 import { logAuditEvent, getClientIp, getUserAgent } from '@/lib/audit';
-=======
->>>>>>> Stashed changes
 
 export const runtime = 'nodejs';
 
@@ -20,7 +17,6 @@ export async function POST(req: Request) {
   }
 
   try {
-<<<<<<< Updated upstream
     // Log logout event
     await logAuditEvent(
       userId,
@@ -29,9 +25,12 @@ export async function POST(req: Request) {
       getUserAgent(req)
     );
 
-=======
+
     // Logout successful (audit logging removed as AuditLog model doesn't exist in schema)
->>>>>>> Stashed changes
+
+
+    // Logout successful (audit logging removed as AuditLog model doesn't exist in schema)
+
     return NextResponse.json({ ok: true, data: { message: 'Muvaffaqiyatli chiqildi' } });
   } catch (error) {
     console.error('Logout error:', error);
