@@ -330,7 +330,39 @@ const Topbar = () => {
               setShowDropdown(!showDropdown);
               setShowNotifications(false);
             }}
+            aria-label="Profile menu"
           >
+            {(user as UserWithAvatar)?.avatarUrl ? (
+              <img
+                src={(user as UserWithAvatar).avatarUrl}
+                alt={user?.name || 'User'}
+                className="profile-avatar"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div 
+              className="profile-avatar" 
+              style={{ 
+                display: (user as UserWithAvatar)?.avatarUrl ? 'none' : 'flex',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                flexShrink: 0,
+              }}
+            >
+              {user?.name?.charAt(0).toUpperCase() || 'U'}
+            </div>
             <div className="profile-info">
               <span className="user-name">{user?.name || 'Foydalanuvchi'}</span>
               <span className="user-role">{getRoleLabel(user?.role || 'user')}</span>

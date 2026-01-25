@@ -4262,7 +4262,7 @@ body {
     display: block !important;
   }
 
-  /* Notification Dropdown - Mobil uchun (Professional - FIXED) */
+  /* Notification Dropdown - Mobil uchun (Professional - FIXED - NO OVERLAP) */
   .notification-dropdown {
     position: fixed !important;
     right: 0.5rem !important;
@@ -4270,10 +4270,10 @@ body {
     width: auto !important;
     max-width: calc(100vw - 1rem) !important;
     top: auto !important;
-    bottom: 4.5rem !important; /* Topbar height + margin */
-    max-height: calc(100vh - 6rem) !important;
+    bottom: 5.5rem !important; /* Search bar'dan pastda - overlap bo'lmasligi uchun */
+    max-height: calc(100vh - 7rem) !important;
     margin-top: 0 !important;
-    z-index: 10000 !important;
+    z-index: 9999 !important; /* Profile dropdown'dan yuqori */
     border-radius: 24px !important;
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35) !important;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -4352,7 +4352,7 @@ body {
     font-size: 0.9375rem !important;
   }
 
-  /* Profile Dropdown - Mobil uchun (Professional - FIXED) */
+  /* Profile Dropdown - Mobil uchun (Professional - FIXED - NO OVERLAP) */
   .profile-dropdown {
     position: fixed !important;
     right: 0.5rem !important;
@@ -4360,9 +4360,9 @@ body {
     width: 320px !important;
     max-width: calc(100vw - 1rem) !important;
     top: auto !important;
-    bottom: 4.5rem !important; /* Topbar height + margin */
+    bottom: 5.5rem !important; /* Search bar'dan pastda - overlap bo'lmasligi uchun */
     margin-top: 0 !important;
-    z-index: 10000 !important;
+    z-index: 9998 !important; /* Notification'dan past (9999) */
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35) !important;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
     backdrop-filter: blur(40px) saturate(180%) !important;
@@ -4375,21 +4375,36 @@ body {
 
   /* Profile Avatar - Mobil uchun (Professional) */
   .profile-button {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-width: 44px;
-    min-height: 44px;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    padding: 0.5rem !important;
   }
 
-  .profile-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid rgba(102, 126, 234, 0.3);
-    flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  .profile-button .profile-avatar {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 2px solid rgba(102, 126, 234, 0.3) !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    font-weight: 700 !important;
+    font-size: 0.875rem !important;
+  }
+
+  .profile-button img.profile-avatar {
+    background: none !important;
+    color: transparent !important;
   }
 
   .profile-info {
@@ -4441,6 +4456,7 @@ body {
     background: linear-gradient(135deg, #667eea, #764ba2) !important;
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
     -webkit-mask-composite: xor !important;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
     mask-composite: exclude !important;
     opacity: 0.3 !important;
   }
