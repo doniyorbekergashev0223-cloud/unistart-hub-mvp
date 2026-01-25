@@ -351,13 +351,17 @@ const Topbar = () => {
                 display: (user as UserWithAvatar)?.avatarUrl ? 'none' : 'flex',
                 width: '32px',
                 height: '32px',
+                minWidth: '32px',
+                minHeight: '32px',
+                maxWidth: '32px',
+                maxHeight: '32px',
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
                 fontWeight: 700,
-                fontSize: '0.875rem',
+                fontSize: '0.75rem',
                 flexShrink: 0,
               }}
             >
