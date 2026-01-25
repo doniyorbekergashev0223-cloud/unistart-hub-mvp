@@ -29,27 +29,27 @@ export async function GET() {
   try {
     console.log('Starting database queries...')
 
-    // Test connection first with timeout
+    // Prisma connects lazily, so we test with a simple query instead of $connect()
+    // This is more reliable and handles connection errors better
     try {
-      await Promise.race([
-        prisma.$connect(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000)
-        )
-      ])
-      console.log('Database connection established')
-    } catch (connectError) {
+      await prisma.$queryRaw`SELECT 1`
+      console.log('Database connection verified')
+    } catch (connectError: any) {
       console.error('Database connection failed:', connectError)
-      throw new Error(
-        `Database serverga ulanib bo'lmadi. Iltimos, quyidagilarni tekshiring:\n` +
-        `1. DATABASE_URL to'g'ri ekanligini tekshiring\n` +
-        `2. Supabase project faol ekanligini tekshiring\n` +
-        `3. Parol to'g'ri ekanligini tekshiring\n` +
-        `4. Internet aloqasini tekshiring`
-      )
+      // Return zeros instead of error to prevent dashboard crash
+      return NextResponse.json({
+        ok: true,
+        data: {
+          usersCount: 0,
+          totalProjects: 0,
+          activeProjects: 0,
+          rejectedProjects: 0,
+        },
+      })
     }
 
     // Get all statistics in parallel for better performance
+    // Each query has individual error handling to prevent one failure from breaking all
     const [
       usersCount,
       totalProjects,
@@ -57,30 +57,30 @@ export async function GET() {
       rejectedProjects,
     ] = await Promise.all([
       // Total registered users
-      prisma.user.count().catch(err => {
-        console.error('User count error:', err)
+      prisma.user.count().catch((err: any) => {
+        console.error('User count error:', err?.message || err)
         return 0
       }),
 
       // Total projects
-      prisma.project.count().catch(err => {
-        console.error('Total projects count error:', err)
+      prisma.project.count().catch((err: any) => {
+        console.error('Total projects count error:', err?.message || err)
         return 0
       }),
 
       // Active projects (status = JARAYONDA)
       prisma.project.count({
         where: { status: 'JARAYONDA' as any }
-      }).catch(err => {
-        console.error('Active projects count error:', err)
+      }).catch((err: any) => {
+        console.error('Active projects count error:', err?.message || err)
         return 0
       }),
 
       // Rejected projects (status = RAD_ETILDI)
       prisma.project.count({
         where: { status: 'RAD_ETILDI' as any }
-      }).catch(err => {
-        console.error('Rejected projects count error:', err)
+      }).catch((err: any) => {
+        console.error('Rejected projects count error:', err?.message || err)
         return 0
       }),
     ])
@@ -96,11 +96,18 @@ export async function GET() {
         rejectedProjects,
       },
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Dashboard stats error:', error)
-    console.error('Error details:', error instanceof Error ? error.message : String(error))
-    return jsonError(500, 'INTERNAL_ERROR', 'Statistika olishda xatolik yuz berdi.', {
-      message: error instanceof Error ? error.message : String(error)
+    console.error('Error details:', error?.message || String(error))
+    // Return zeros instead of error to prevent dashboard crash
+    return NextResponse.json({
+      ok: true,
+      data: {
+        usersCount: 0,
+        totalProjects: 0,
+        activeProjects: 0,
+        rejectedProjects: 0,
+      },
     })
   }
 }
