@@ -56,12 +56,23 @@ export async function POST(req: Request) {
           passwordHash: true,
         },
       })
-    } catch (dbError) {
+    } catch (dbError: any) {
       console.error('Database query error:', dbError)
+      
+      // Check for specific connection errors
+      if (dbError?.message?.includes('MaxClientsInSessionMode') || 
+          dbError?.message?.includes('max clients reached')) {
+        return jsonError(
+          503,
+          'DATABASE_CONNECTION_LIMIT',
+          "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+        )
+      }
+      
       return jsonError(
         500,
         'DATABASE_ERROR',
-        "Ma'lumotlar bazasi bilan bog'lanishda xatolik yuz berdi."
+        "Ma'lumotlar bazasi bilan bog'lanishda xatolik yuz berdi. Iltimos, qayta urinib ko'ring."
       )
     }
 

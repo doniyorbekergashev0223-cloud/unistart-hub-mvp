@@ -61,10 +61,36 @@ export async function POST(req: Request) {
     }
 
     // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true },
-    })
+    let user
+    try {
+      user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, email: true },
+      })
+    } catch (dbError: any) {
+      console.error('Database query error in forgot-password:', dbError)
+      
+      // Check for connection limit errors
+      if (dbError?.message?.includes('MaxClientsInSessionMode') || 
+          dbError?.message?.includes('max clients reached')) {
+        // Still return success for security, but log the error
+        console.error('❌ CRITICAL: Database connection limit reached. Fix DATABASE_URL in Vercel.')
+        return NextResponse.json({
+          ok: true,
+          data: {
+            message: "Agar bu email ro'yxatdan o'tgan bo'lsa, parolni tiklash kodi yuborildi.",
+          },
+        })
+      }
+      
+      // For other errors, still return success (security)
+      return NextResponse.json({
+        ok: true,
+        data: {
+          message: "Agar bu email ro'yxatdan o'tgan bo'lsa, parolni tiklash kodi yuborildi.",
+        },
+      })
+    }
 
     // Always return success (security: don't reveal if email exists)
     // If user doesn't exist, we still return success but don't send email

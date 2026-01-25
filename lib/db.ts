@@ -32,22 +32,32 @@ export function getPrisma(): PrismaClient | null {
     try {
       // Check if DATABASE_URL uses Session Pooler (port 6543) - this causes connection limit issues
       const dbUrl = process.env.DATABASE_URL || ''
+      
       if (dbUrl.includes(':6543') || dbUrl.includes('pgbouncer=true')) {
-        console.warn('⚠️ WARNING: DATABASE_URL uses Session Pooler (port 6543). This causes "max clients reached" errors.')
-        console.warn('⚠️ Please use Direct Connection (port 5432) in Vercel environment variables.')
-        console.warn('⚠️ See SUPABASE_CONNECTION_FIX.md for instructions.')
+        console.error('❌ CRITICAL ERROR: DATABASE_URL uses Session Pooler (port 6543).')
+        console.error('❌ This causes "max clients reached" errors on Vercel.')
+        console.error('❌ Please use Direct Connection (port 5432) in Vercel environment variables.')
+        console.error('❌ See CRITICAL_DATABASE_FIX.md for instructions.')
+        // Don't create client if using Session Pooler - it will fail anyway
+        throw new Error('DATABASE_URL must use Direct Connection (port 5432), not Session Pooler (port 6543)')
       }
+
+      // Log connection info for debugging
+      console.log('Database connection info:', {
+        hasUrl: !!dbUrl,
+        urlLength: dbUrl.length,
+        usesDirectConnection: dbUrl.includes(':5432') && !dbUrl.includes(':6543'),
+        usesSessionPooler: dbUrl.includes(':6543') || dbUrl.includes('pgbouncer=true'),
+      })
 
       globalForPrisma.__unistartPrisma = new PrismaClient({
         log:
           process.env.NODE_ENV === 'development'
             ? ['query', 'warn', 'error']
             : ['error'],
-        // Connection pool configuration for Vercel/serverless
-        // Reduces connection pool size to prevent "max clients reached" errors
         datasources: {
           db: {
-            url: process.env.DATABASE_URL,
+            url: dbUrl,
           },
         },
       })

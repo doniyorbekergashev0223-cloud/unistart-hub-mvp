@@ -74,10 +74,27 @@ export async function POST(req: Request) {
     }
 
     // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    })
+    let user
+    try {
+      user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true },
+      })
+    } catch (dbError: any) {
+      console.error('Database query error in reset-password (find user):', dbError)
+      
+      // Check for connection limit errors
+      if (dbError?.message?.includes('MaxClientsInSessionMode') || 
+          dbError?.message?.includes('max clients reached')) {
+        return jsonError(
+          503,
+          'DATABASE_CONNECTION_LIMIT',
+          "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+        )
+      }
+      
+      return jsonError(500, 'DATABASE_ERROR', "Ma'lumotlar bazasi bilan bog'lanishda xatolik yuz berdi.")
+    }
 
     if (!user) {
       return jsonError(404, 'USER_NOT_FOUND', 'Foydalanuvchi topilmadi.')
@@ -87,15 +104,32 @@ export async function POST(req: Request) {
     const hashedCode = hashToken(code)
 
     // Find password reset record
-    const resetRecord = await prisma.passwordReset.findFirst({
-      where: {
-        userId: user.id,
-        token: hashedCode,
-        used: false,
-        expiresAt: { gt: new Date() },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+    let resetRecord
+    try {
+      resetRecord = await prisma.passwordReset.findFirst({
+        where: {
+          userId: user.id,
+          token: hashedCode,
+          used: false,
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+    } catch (dbError: any) {
+      console.error('Database query error in reset-password:', dbError)
+      
+      // Check for connection limit errors
+      if (dbError?.message?.includes('MaxClientsInSessionMode') || 
+          dbError?.message?.includes('max clients reached')) {
+        return jsonError(
+          503,
+          'DATABASE_CONNECTION_LIMIT',
+          "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+        )
+      }
+      
+      return jsonError(500, 'DATABASE_ERROR', "Ma'lumotlar bazasi bilan bog'lanishda xatolik yuz berdi.")
+    }
 
     if (!resetRecord) {
       return jsonError(400, 'INVALID_CODE', "Tasdiqlash kodi noto'g'ri yoki muddati o'tgan.")
