@@ -5,7 +5,12 @@ export const runtime = 'nodejs'
 
 type Role = 'user' | 'admin' | 'expert'
 
-function jsonError(status: number, code: string, message: string, details?: unknown) {
+function jsonError(
+  status: number,
+  code: string,
+  message: string,
+  details?: unknown
+) {
   return NextResponse.json(
     { ok: false, error: { code, message, details } },
     { status }
@@ -30,19 +35,22 @@ const ENUM_TO_STATUS: Record<string, string> = {
   RAD_ETILDI: 'Rad etildi',
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const prisma = getPrisma()
   if (!prisma) {
     return jsonError(
       503,
       'DATABASE_NOT_CONFIGURED',
-      "Ma'lumotlar bazasi sozlanmagan (DATABASE_URL yo'q)."
+      "Ma'lumotlar bazasi sozlanmagan."
     )
   }
 
   const actor = getActor(req)
   if (!actor) {
-    return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.")
+    return jsonError(401, 'UNAUTHORIZED', 'Kirish talab qilinadi.')
   }
 
   const { id } = params
@@ -51,7 +59,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 
   try {
-    // Get project with all relations
     const project = await prisma.project.findUnique({
       where: { id },
       include: {
@@ -60,19 +67,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
             id: true,
             name: true,
             email: true,
+            role: true,
           },
         },
-        reviews: {
+        comments: {
           orderBy: { createdAt: 'asc' },
-          include: {
-            reviewer: {
-              select: {
-                id: true,
-                name: true,
-                role: true,
-              },
-            },
-          },
         },
       },
     })
@@ -81,17 +80,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return jsonError(404, 'PROJECT_NOT_FOUND', 'Loyiha topilmadi.')
     }
 
-    // Access control: only owner, admin, or expert can view
     const canAccess =
       project.userId === actor.userId ||
       actor.role === 'admin' ||
       actor.role === 'expert'
 
     if (!canAccess) {
-      return jsonError(403, 'FORBIDDEN', 'Ruxsat yo\'q.')
+      return jsonError(403, 'FORBIDDEN', "Ruxsat yo'q.")
     }
 
-    // Format project data
     const formattedProject = {
       id: project.id,
       title: project.title,
@@ -105,16 +102,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         id: project.user.id,
         name: project.user.name,
         email: project.user.email,
+        role: project.user.role,
       },
-      reviews: project.reviews.map((review) => ({
-        id: review.id,
-        reviewerId: review.reviewerId,
-        reviewerName: review.reviewer.name,
-        reviewerRole: review.reviewer.role,
-        status: ENUM_TO_STATUS[review.status] || review.status,
-        statusEnum: review.status,
-        comment: review.comment,
-        createdAt: review.createdAt,
+      comments: project.comments.map((comment) => ({
+        id: comment.id,
+        content: comment.content,
+        authorRole: comment.authorRole,
+        createdAt: comment.createdAt,
       })),
     }
 
