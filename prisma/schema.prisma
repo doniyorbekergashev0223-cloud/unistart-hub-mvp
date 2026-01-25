@@ -27,6 +27,7 @@ model User {
   projects     Project[]
 
   notifications Notification[]
+  passwordResets PasswordReset[]
 }
 
 model Project {
@@ -79,6 +80,21 @@ model InviteCode {
   createdAt DateTime  @default(now())
 
   @@index([code])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 enum UserRole {

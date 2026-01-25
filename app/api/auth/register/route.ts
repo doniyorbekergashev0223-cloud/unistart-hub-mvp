@@ -31,7 +31,6 @@ export async function POST(req: Request) {
     name?: unknown
     email?: unknown
     password?: unknown
-    inviteCode?: unknown
   }
 
   if (!body) {
@@ -41,7 +40,6 @@ export async function POST(req: Request) {
   const name = typeof body.name === 'string' ? body.name.trim() : ''
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
   const password = typeof body.password === 'string' ? body.password : ''
-  const inviteCode = typeof body.inviteCode === 'string' ? body.inviteCode.trim() : ''
 
   const fieldErrors: Record<string, string> = {}
   if (!name) fieldErrors.name = 'Ism majburiy'
@@ -77,10 +75,6 @@ export async function POST(req: Request) {
       },
     })
 
-    /**
-     * TODO (keyingi bosqich): real auth bo'lganda shu yerda JWT/session qaytariladi.
-     * Hozircha UI mock AuthContext ishlaydi, bu endpoint esa parallel tayyor turadi.
-     */
     return NextResponse.json({ ok: true, data: { user: result } }, { status: 201 })
   } catch (e: any) {
     // Prisma unique constraint (email)

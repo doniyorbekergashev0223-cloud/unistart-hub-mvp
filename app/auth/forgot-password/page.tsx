@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 
 const ForgotPasswordPage = () => {
-  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -12,19 +12,40 @@ const ForgotPasswordPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!emailOrPhone.trim()) {
-      setError('Email yoki telefon raqam majburiy');
+    if (!email.trim()) {
+      setError('Email majburiy');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      setError("To'g'ri email kiriting");
       return;
     }
 
     setIsLoading(true);
     setError('');
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSuccess(true);
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const result = await response.json();
+
+      if (result.ok) {
+        setIsSuccess(true);
+      } else {
+        setError(result.error?.message || 'Xatolik yuz berdi');
+      }
+    } catch (err) {
+      setError('Tarmoq xatoligi. Iltimos, qayta urinib ko\'ring.');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   if (isSuccess) {
@@ -34,12 +55,15 @@ const ForgotPasswordPage = () => {
           <div className="auth-header">
             <h1>UniStart <span className="logo-orange">Hub</span></h1>
             <h2>Kod yuborildi</h2>
-            <p>Email yoki telefoningizga tasdiqlash kodi yuborildi</p>
+            <p>Email manzilingizga tasdiqlash kodi yuborildi</p>
           </div>
 
           <div className="success-message">
             <div className="success-icon">✓</div>
-            <p>Tasdiqlash kodi muvaffaqiyatli yuborildi. Iltimos, email yoki SMS-ni tekshiring.</p>
+            <p>Tasdiqlash kodi muvaffaqiyatli yuborildi. Iltimos, email xabaringizni tekshiring.</p>
+            <p style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+              Kod 15 daqiqa davomida amal qiladi.
+            </p>
           </div>
 
           <div className="auth-footer">
@@ -57,23 +81,23 @@ const ForgotPasswordPage = () => {
       <div className="auth-container">
         <div className="auth-header">
           <h1>UniStart <span className="logo-orange">Hub</span></h1>
-          <h2>Parolni tiklash</h2>
-          <p>Email yoki telefon raqamingizni kiriting</p>
+            <h2>Parolni tiklash</h2>
+            <p>Email manzilingizni kiriting</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="emailOrPhone" className="form-label">
-              Email yoki Telefon *
+            <label htmlFor="email" className="form-label">
+              Email *
             </label>
             <input
-              type="text"
-              id="emailOrPhone"
-              name="emailOrPhone"
-              value={emailOrPhone}
-              onChange={(e) => setEmailOrPhone(e.target.value)}
+              type="email"
+              id="email"
+              name="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className={`form-input ${error ? 'error' : ''}`}
-              placeholder="email@example.com yoki +998901234567"
+              placeholder="email@example.com"
               disabled={isLoading}
             />
             {error && <span className="error-message">{error}</span>}

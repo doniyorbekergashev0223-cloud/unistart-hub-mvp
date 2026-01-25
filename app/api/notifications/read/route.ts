@@ -54,8 +54,22 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Notification model doesn't exist in schema, return success
-    // This is a graceful degradation - notifications feature is disabled
+    const notification = await prisma.notification.findFirst({
+      where: {
+        id: notificationId,
+        userId: actor.userId,
+      },
+    })
+
+    if (!notification) {
+      return jsonError(404, 'NOT_FOUND', "Bildirishnoma topilmadi.")
+    }
+
+    await prisma.notification.update({
+      where: { id: notificationId },
+      data: { isRead: true },
+    })
+
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Mark notification read error:', error)

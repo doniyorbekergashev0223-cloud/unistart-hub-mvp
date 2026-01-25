@@ -40,13 +40,24 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Notification model doesn't exist in schema, return empty array
-    // This is a graceful degradation - notifications feature is disabled
+    const notifications = await prisma.notification.findMany({
+      where: { userId: actor.userId },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    const unreadCount = notifications.filter((n) => !n.isRead).length
+
     return NextResponse.json({
       ok: true,
       data: {
-        notifications: [],
-        unreadCount: 0,
+        notifications: notifications.map((n) => ({
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          isRead: n.isRead,
+          createdAt: n.createdAt,
+        })),
+        unreadCount,
       },
     })
   } catch (error) {

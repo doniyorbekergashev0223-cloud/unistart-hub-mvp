@@ -31,14 +31,6 @@ function parseRole(value: string | null): Role | null {
   return null
 }
 
-/**
- * Hozircha "mock auth bridge":
- * real auth (JWT/session) yo'q bo'lgani uchun server rol/userId ni headerdan oladi.
- *
- * Keyingi bosqichda AuthContext real login API ga o'tganda:
- * - token/cookie yuboriladi
- * - server shu token orqali userni topadi
- */
 function getActor(req: Request): { userId: string; role: Role } | null {
   const userId = req.headers.get('x-user-id')?.trim()
   const role = parseRole(req.headers.get('x-user-role'))

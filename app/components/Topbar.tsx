@@ -8,12 +8,9 @@ import '../styles/Topbar.css';
 
 interface Notification {
   id: string;
-  projectId: string | null;
-  projectTitle: string | null;
-  type: string;
   title: string;
   message: string;
-  read: boolean;
+  isRead: boolean;
   createdAt: string;
 }
 
@@ -89,7 +86,7 @@ const Topbar = () => {
       if (response.ok) {
         // Update local state
         setNotifications((prev) =>
-          prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+          prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
         );
         setUnreadCount((prev) => Math.max(0, prev - 1));
       }
@@ -99,11 +96,8 @@ const Topbar = () => {
   };
 
   const handleNotificationClick = (notification: Notification) => {
-    if (!notification.read) {
+    if (!notification.isRead) {
       markAsRead(notification.id);
-    }
-    if (notification.projectId) {
-      router.push(`/projects/${notification.projectId}`);
     }
     setShowNotifications(false);
   };
@@ -237,7 +231,7 @@ const Topbar = () => {
                   notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`notification-item ${!notification.read ? 'unread' : ''}`}
+                      className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
                       onClick={() => handleNotificationClick(notification)}
                     >
                       <div className="notification-content">

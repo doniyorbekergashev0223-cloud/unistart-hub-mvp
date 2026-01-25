@@ -41,56 +41,9 @@ function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
   return !!value && typeof value === 'object' && 'ok' in value;
 }
 
-const DEFAULT_MOCK_PROJECTS: Project[] = [
-  {
-    id: 1,
-    name: 'Smart Farming Platform',
-    user: 'Abdulla Rahimov',
-    date: '2024-01-20',
-    status: 'Qabul qilindi'
-  },
-  {
-    id: 2,
-    name: 'Online Learning Hub',
-    user: 'Malika Karimova',
-    date: '2024-01-18',
-    status: 'Jarayonda'
-  },
-  {
-    id: 3,
-    name: 'Local E-commerce',
-    user: 'Rustam Aliyev',
-    date: '2024-01-15',
-    status: 'Qabul qilindi'
-  },
-  {
-    id: 4,
-    name: 'Healthcare App',
-    user: 'Dilnoza Umarova',
-    date: '2024-01-12',
-    status: 'Rad etildi'
-  },
-  {
-    id: 5,
-    name: 'Tourism Guide',
-    user: 'Bekzod Toshmatov',
-    date: '2024-01-10',
-    status: 'Jarayonda'
-  },
-  {
-    id: 6,
-    name: 'Financial Tracker',
-    user: 'Gulnora Saidova',
-    date: '2024-01-08',
-    status: 'Qabul qilindi'
-  }
-];
-
 export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
 
-  // DB sozlangan bo'lsa, mock ko'rsatmaslik uchun bo'sh ro'yxat bilan boshlaymiz.
-  // DATABASE_URL yo'q bo'lsa, API `DATABASE_NOT_CONFIGURED` qaytaradi va biz mock-ga tushamiz.
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -113,11 +66,6 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) 
       }
 
       if (!json.ok) {
-        // DATABASE_URL yo'q bo'lsa, mock ma'lumotlar bilan ishlashda davom etamiz.
-        if (json.error?.code === 'DATABASE_NOT_CONFIGURED') {
-          setProjects(DEFAULT_MOCK_PROJECTS);
-          return;
-        }
         return;
       }
 
@@ -169,17 +117,6 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) 
       }
 
       if (!json.ok) {
-        // If search fails, fall back to normal projects
-        if (json.error?.code === 'DATABASE_NOT_CONFIGURED') {
-          // Filter mock projects by query
-          const filtered = DEFAULT_MOCK_PROJECTS.filter(
-            (p) =>
-              p.name.toLowerCase().includes(query.toLowerCase()) ||
-              p.user.toLowerCase().includes(query.toLowerCase()) ||
-              p.status.toLowerCase().includes(query.toLowerCase())
-          );
-          setProjects(filtered);
-        }
         return;
       }
 

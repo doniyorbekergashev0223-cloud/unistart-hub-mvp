@@ -17,18 +17,11 @@ export async function GET() {
 
   const prisma = getPrisma()
   if (!prisma) {
-    console.error('Prisma client is null - DATABASE_URL not configured')
-    // Return mock data for development when DB is not configured
-    console.log('Returning mock data since database is not configured')
-    return NextResponse.json({
-      ok: true,
-      data: {
-        usersCount: 0,
-        totalProjects: 0,
-        activeProjects: 0,
-        rejectedProjects: 0,
-      },
-    })
+    return jsonError(
+      503,
+      'DATABASE_NOT_CONFIGURED',
+      "Ma'lumotlar bazasi sozlanmagan (DATABASE_URL yo'q)."
+    )
   }
 
   console.log('Prisma client created successfully')

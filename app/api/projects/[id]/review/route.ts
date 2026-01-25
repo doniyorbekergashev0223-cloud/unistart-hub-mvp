@@ -108,7 +108,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         data: { status: statusEnum as any },
       })
 
-      // Notification creation removed - Notification model doesn't exist in schema
+      // Create notification for project owner
+      const statusLabels: Record<string, string> = {
+        QABUL_QILINDI: 'Qabul qilindi',
+        JARAYONDA: 'Jarayonda',
+        RAD_ETILDI: 'Rad etildi',
+      }
+
+      await tx.notification.create({
+        data: {
+          userId: project.userId,
+          title: "Loyihangiz ko'rib chiqildi",
+          message: `Loyihangiz "${project.title}" holati '${statusLabels[statusEnum]}' ga o'zgartirildi.`,
+        },
+      })
     })
 
     return NextResponse.json({ ok: true })

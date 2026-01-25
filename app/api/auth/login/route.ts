@@ -77,10 +77,6 @@ export async function POST(req: Request) {
 
     const { passwordHash, ...safeUser } = user
 
-    /**
-     * TODO (keyingi bosqich): real auth bo'lganda shu yerda JWT/session qaytariladi.
-     * Hozircha UI mock AuthContext ishlaydi, bu endpoint esa parallel tayyor turadi.
-     */
     return NextResponse.json({ ok: true, data: { user: safeUser } })
   } catch (error) {
     console.error('Login error:', error)

@@ -60,8 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Real API (safe migration). Agar DATABASE_URL yo'q bo'lsa, mock-ga fallback qilamiz.
-    const response = await postJson<{ user: { id: string; name: string; email: string; role: UserRole; avatarUrl?: string | null } }>(
+    const response = await postJson<{ user: { id: string; name: string; email: string; role: UserRole } }>(
       '/api/auth/login',
       { email, password }
     );
@@ -71,42 +70,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return true;
     }
 
-    if (response && !response.ok && response.error?.code === 'DATABASE_NOT_CONFIGURED') {
-      // Graceful fallback (DB sozlanmagan bo'lsa ham UI ishlashda davom etadi)
-      const fallbackUser: User = {
-        id: '1',
-        name: 'Test User',
-        email: email,
-        role: 'user',
-      };
-      setUser(fallbackUser);
-      return true;
-    }
-
     return false;
   };
 
   const register = async (name: string, email: string, password: string, role: UserRole): Promise<boolean> => {
-    // Real API (safe migration). Agar DATABASE_URL yo'q bo'lsa, mock-ga fallback qilamiz.
-    const response = await postJson<{ user: { id: string; name: string; email: string; role: UserRole; avatarUrl?: string | null } }>(
+    const response = await postJson<{ user: { id: string; name: string; email: string; role: UserRole } }>(
       '/api/auth/register',
       { name, email, password }
     );
 
     if (response?.ok) {
       setUser(response.data.user);
-      return true;
-    }
-
-    if (response && !response.ok && response.error?.code === 'DATABASE_NOT_CONFIGURED') {
-      // Graceful fallback (DB sozlanmagan bo'lsa ham UI ishlashda davom etadi)
-      const fallbackUser: User = {
-        id: Date.now().toString(),
-        name: name,
-        email: email,
-        role: role,
-      };
-      setUser(fallbackUser);
       return true;
     }
 
