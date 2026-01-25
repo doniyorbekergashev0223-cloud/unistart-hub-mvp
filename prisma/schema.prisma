@@ -77,6 +77,8 @@ enum UserRole {
 
 }enum UserRole {
 
+}enum UserRole {
+
   user
   admin
   expert
