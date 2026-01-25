@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getPrisma } from '@/lib/db';
-import { uploadAvatar } from '@/lib/supabase';
-import { logAuditEvent, getClientIp, getUserAgent } from '@/lib/audit';
-import { AuditLogAction } from '@prisma/client';
 
 export const runtime = 'nodejs';
 
@@ -32,7 +29,6 @@ export async function GET(req: Request) {
         id: true,
         name: true,
         email: true,
-        avatarUrl: true,
         createdAt: true,
       },
     });
@@ -63,19 +59,18 @@ export async function PATCH(req: Request) {
   try {
     const formData = await req.formData();
     const name = formData.get('name')?.toString();
-    const avatarFile = formData.get('avatar') as File | null;
 
     // Verify user exists
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, avatarUrl: true },
+      select: { id: true, name: true },
     });
 
     if (!existingUser) {
       return jsonError(404, 'USER_NOT_FOUND', 'Foydalanuvchi topilmadi.');
     }
 
-    const updateData: { name?: string; avatarUrl?: string } = {};
+    const updateData: { name?: string } = {};
 
     // Update name if provided
     if (name && name.trim() && name !== existingUser.name) {
@@ -85,15 +80,7 @@ export async function PATCH(req: Request) {
       updateData.name = name.trim();
     }
 
-    // Upload avatar if provided
-    if (avatarFile && avatarFile.size > 0) {
-      try {
-        const avatarUrl = await uploadAvatar(avatarFile, userId);
-        updateData.avatarUrl = avatarUrl;
-      } catch (error: any) {
-        return jsonError(400, 'AVATAR_UPLOAD_ERROR', error.message || 'Rasm yuklashda xatolik.');
-      }
-    }
+    // Avatar upload removed - avatarUrl field doesn't exist in User model
 
     // If no updates, return current data
     if (Object.keys(updateData).length === 0) {
@@ -103,7 +90,6 @@ export async function PATCH(req: Request) {
           id: true,
           name: true,
           email: true,
-          avatarUrl: true,
           createdAt: true,
         },
       });
@@ -118,20 +104,11 @@ export async function PATCH(req: Request) {
         id: true,
         name: true,
         email: true,
-        avatarUrl: true,
         createdAt: true,
       },
     });
 
-    // Log audit event
-    const action = updateData.avatarUrl ? AuditLogAction.AVATAR_UPDATE : AuditLogAction.PROFILE_UPDATE;
-    await logAuditEvent(
-      userId,
-      action,
-      getClientIp(req),
-      getUserAgent(req),
-      { updatedFields: Object.keys(updateData) }
-    );
+    // Audit logging removed - AuditLog model doesn't exist in schema
 
     return NextResponse.json({ ok: true, data: { user: updatedUser } });
   } catch (error) {

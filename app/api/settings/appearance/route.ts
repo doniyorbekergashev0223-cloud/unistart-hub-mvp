@@ -23,28 +23,11 @@ export async function GET(req: Request) {
   }
 
   try {
-    let preferences = await prisma.userPreferences.findUnique({
-      where: { userId },
-      select: { theme: true },
-    });
-
-    // Create default preferences if not exists
-    if (!preferences) {
-      preferences = await prisma.userPreferences.create({
-        data: {
-          userId,
-          emailStatusChange: true,
-          emailAdminComment: true,
-          emailPlatformUpdates: false,
-          theme: 'system',
-        },
-        select: { theme: true },
-      });
-    }
-
+    // UserPreferences model doesn't exist in schema, return default theme
+    // Theme is stored in localStorage on client side
     return NextResponse.json({
       ok: true,
-      data: { theme: preferences.theme },
+      data: { theme: 'system' },
     });
   } catch (error) {
     console.error('Theme fetch error:', error);
@@ -78,23 +61,11 @@ export async function PATCH(req: Request) {
       return jsonError(400, 'INVALID_THEME', 'Noto\'g\'ri mavzu. Faqat "light", "dark" yoki "system" qabul qilinadi.');
     }
 
-    // Upsert preferences
-    const preferences = await prisma.userPreferences.upsert({
-      where: { userId },
-      create: {
-        userId,
-        emailStatusChange: true,
-        emailAdminComment: true,
-        emailPlatformUpdates: false,
-        theme,
-      },
-      update: { theme },
-      select: { theme: true },
-    });
-
+    // UserPreferences model doesn't exist in schema
+    // Theme is stored in localStorage on client side, just return success
     return NextResponse.json({
       ok: true,
-      data: { theme: preferences.theme },
+      data: { theme },
     });
   } catch (error) {
     console.error('Theme update error:', error);

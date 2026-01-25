@@ -45,25 +45,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 
   try {
-    // Get all reviews for this project, ordered by newest first
-    const reviews = await prisma.projectReview.findMany({
+    // ProjectReview model doesn't exist in schema, use ProjectComment instead
+    const comments = await prisma.projectComment.findMany({
       where: { projectId: id },
       orderBy: { createdAt: 'desc' },
-      include: {
-        reviewer: {
-          select: { id: true, name: true, role: true },
-        },
-      },
     })
 
-    const formattedReviews = reviews.map((review) => ({
-      id: review.id,
-      reviewerName: review.reviewer.name,
-      reviewerRole: review.reviewer.role,
-      status: review.status === 'QABUL_QILINDI' ? 'Qabul qilindi' :
-              review.status === 'RAD_ETILDI' ? 'Rad etildi' : 'Jarayonda',
-      comment: review.comment,
-      createdAt: review.createdAt,
+    // Format comments as reviews (since ProjectReview model doesn't exist)
+    const formattedReviews = comments.map((comment) => ({
+      id: comment.id,
+      reviewerName: 'Ekspert', // ProjectComment doesn't have reviewer info
+      reviewerRole: comment.authorRole,
+      status: 'Jarayonda', // Default status since ProjectComment doesn't have status
+      comment: comment.content,
+      createdAt: comment.createdAt,
     }))
 
     return NextResponse.json({

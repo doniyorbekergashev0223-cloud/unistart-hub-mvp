@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPrisma } from '@/lib/db';
 import { verifyPassword, hashPassword } from '@/lib/security';
-import { logAuditEvent, getClientIp, getUserAgent } from '@/lib/audit';
-import { AuditLogAction } from '@prisma/client';
 
 export const runtime = 'nodejs';
 
@@ -82,13 +80,7 @@ export async function POST(req: Request) {
       data: { passwordHash: newPasswordHash },
     });
 
-    // Log audit event
-    await logAuditEvent(
-      userId,
-      AuditLogAction.PASSWORD_CHANGE,
-      getClientIp(req),
-      getUserAgent(req)
-    );
+    // Audit logging removed - AuditLog model doesn't exist in schema
 
     return NextResponse.json({ ok: true, data: { message: 'Parol muvaffaqiyatli o\'zgartirildi.' } });
   } catch (error) {

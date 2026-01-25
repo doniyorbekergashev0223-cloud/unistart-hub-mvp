@@ -36,9 +36,25 @@ export async function GET() {
   try {
     console.log('Starting database queries...')
 
-    // Test connection first
-    await prisma.$connect()
-    console.log('Database connection established')
+    // Test connection first with timeout
+    try {
+      await Promise.race([
+        prisma.$connect(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000)
+        )
+      ])
+      console.log('Database connection established')
+    } catch (connectError) {
+      console.error('Database connection failed:', connectError)
+      throw new Error(
+        `Database serverga ulanib bo'lmadi. Iltimos, quyidagilarni tekshiring:\n` +
+        `1. DATABASE_URL to'g'ri ekanligini tekshiring\n` +
+        `2. Supabase project faol ekanligini tekshiring\n` +
+        `3. Parol to'g'ri ekanligini tekshiring\n` +
+        `4. Internet aloqasini tekshiring`
+      )
+    }
 
     // Get all statistics in parallel for better performance
     const [

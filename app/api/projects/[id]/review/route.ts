@@ -93,14 +93,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         throw new Error('PROJECT_NOT_FOUND')
       }
 
-      // Create the review
-      await tx.projectReview.create({
+      // Create comment instead of review (ProjectReview model doesn't exist in schema)
+      await tx.projectComment.create({
         data: {
           projectId: id,
-          reviewerId: actor.userId,
-          reviewerRole: actor.role,
-          status: statusEnum as any,
-          comment,
+          content: comment,
+          authorRole: actor.role,
         },
       })
 
@@ -110,22 +108,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         data: { status: statusEnum as any },
       })
 
-      // Create notification for project owner
-      const statusLabels: Record<string, string> = {
-        QABUL_QILINDI: 'Qabul qilindi',
-        JARAYONDA: 'Jarayonda',
-        RAD_ETILDI: 'Rad etildi',
-      }
-
-      await tx.notification.create({
-        data: {
-          userId: project.userId,
-          projectId: id,
-          type: 'PROJECT_STATUS_CHANGED',
-          title: "Loyihangiz ko'rib chiqildi",
-          message: `Loyihangiz "${project.title}" holati '${statusLabels[statusEnum]}' ga o'zgartirildi.`,
-        },
-      })
+      // Notification creation removed - Notification model doesn't exist in schema
     })
 
     return NextResponse.json({ ok: true })

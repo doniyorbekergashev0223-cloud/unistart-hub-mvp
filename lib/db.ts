@@ -33,6 +33,12 @@ export function getPrisma() {
             url: process.env.DATABASE_URL,
           },
         },
+        // Connection timeout settings
+        __internal: {
+          engine: {
+            connectTimeout: 10000, // 10 seconds
+          },
+        },
       })
       console.log('Prisma client created successfully')
     } catch (error) {
