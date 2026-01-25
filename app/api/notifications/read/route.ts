@@ -54,25 +54,76 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const notification = await prisma.notification.findFirst({
-      where: {
-        id: notificationId,
-        userId: actor.userId,
-      },
-    })
+    let notification
+    try {
+      notification = await prisma.notification.findFirst({
+        where: {
+          id: notificationId,
+          userId: actor.userId,
+        },
+      })
+    } catch (dbError: any) {
+      console.error('Database query error in notifications/read (find):', dbError)
+      console.error('Error type:', dbError?.constructor?.name)
+      console.error('Error code:', dbError?.code)
+      
+      // Check for connection limit errors
+      if (dbError?.message?.includes('MaxClientsInSessionMode') || 
+          dbError?.message?.includes('max clients reached')) {
+        return jsonError(
+          503,
+          'DATABASE_CONNECTION_LIMIT',
+          "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+        )
+      }
+      
+      throw dbError
+    }
 
     if (!notification) {
       return jsonError(404, 'NOT_FOUND', "Bildirishnoma topilmadi.")
     }
 
-    await prisma.notification.update({
-      where: { id: notificationId },
-      data: { isRead: true },
-    })
+    try {
+      await prisma.notification.update({
+        where: { id: notificationId },
+        data: { isRead: true },
+      })
+    } catch (dbError: any) {
+      console.error('Database query error in notifications/read (update):', dbError)
+      console.error('Error type:', dbError?.constructor?.name)
+      console.error('Error code:', dbError?.code)
+      
+      // Check for connection limit errors
+      if (dbError?.message?.includes('MaxClientsInSessionMode') || 
+          dbError?.message?.includes('max clients reached')) {
+        return jsonError(
+          503,
+          'DATABASE_CONNECTION_LIMIT',
+          "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+        )
+      }
+      
+      throw dbError
+    }
 
     return NextResponse.json({ ok: true })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Mark notification read error:', error)
+    console.error('Error type:', error?.constructor?.name)
+    console.error('Error code:', error?.code)
+    console.error('Error message:', error?.message)
+    
+    // Check for connection limit errors
+    if (error?.message?.includes('MaxClientsInSessionMode') || 
+        error?.message?.includes('max clients reached')) {
+      return jsonError(
+        503,
+        'DATABASE_CONNECTION_LIMIT',
+        "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+      )
+    }
+    
     return jsonError(500, 'INTERNAL_ERROR', 'Server xatoligi yuz berdi.')
   }
 }

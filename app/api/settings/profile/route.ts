@@ -40,8 +40,32 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ ok: true, data: { user } });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Profile fetch error:', error);
+    console.error('Error type:', error?.constructor?.name);
+    console.error('Error code:', error?.code);
+    console.error('Error message:', error?.message);
+    
+    // Check for connection limit errors
+    if (error?.message?.includes('MaxClientsInSessionMode') || 
+        error?.message?.includes('max clients reached')) {
+      return jsonError(
+        503,
+        'DATABASE_CONNECTION_LIMIT',
+        "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+      )
+    }
+    
+    // Check for "Tenant or user not found" error
+    if (error?.message?.includes('Tenant or user not found') ||
+        error?.message?.includes('tenant or user not found')) {
+      return jsonError(
+        503,
+        'DATABASE_TENANT_ERROR',
+        "Ma'lumotlar bazasi username formati noto'g'ri. Supabase uchun username 'postgres.PROJECT-REF' formatida bo'lishi kerak. TENANT_USER_FIX.md faylini ko'ring."
+      )
+    }
+    
     return jsonError(500, 'INTERNAL_ERROR', 'Server xatoligi yuz berdi.');
   }
 }
@@ -64,10 +88,39 @@ export async function PATCH(req: Request) {
     const avatarFile = formData.get('avatar') as File | null;
 
     // Verify user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, name: true, avatarUrl: true },
-    });
+    let existingUser
+    try {
+      existingUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, name: true, avatarUrl: true },
+      });
+    } catch (dbError: any) {
+      console.error('Database query error in profile update (find user):', dbError);
+      console.error('Error type:', dbError?.constructor?.name);
+      console.error('Error code:', dbError?.code);
+      
+      // Check for connection limit errors
+      if (dbError?.message?.includes('MaxClientsInSessionMode') || 
+          dbError?.message?.includes('max clients reached')) {
+        return jsonError(
+          503,
+          'DATABASE_CONNECTION_LIMIT',
+          "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+        )
+      }
+      
+      // Check for "Tenant or user not found" error
+      if (dbError?.message?.includes('Tenant or user not found') ||
+          dbError?.message?.includes('tenant or user not found')) {
+        return jsonError(
+          503,
+          'DATABASE_TENANT_ERROR',
+          "Ma'lumotlar bazasi username formati noto'g'ri. Supabase uchun username 'postgres.PROJECT-REF' formatida bo'lishi kerak. TENANT_USER_FIX.md faylini ko'ring."
+        )
+      }
+      
+      return jsonError(500, 'DATABASE_ERROR', "Ma'lumotlar bazasi bilan bog'lanishda xatolik yuz berdi.")
+    }
 
     if (!existingUser) {
       return jsonError(404, 'USER_NOT_FOUND', 'Foydalanuvchi topilmadi.');
@@ -96,8 +149,38 @@ export async function PATCH(req: Request) {
 
     // If no updates, return current data
     if (Object.keys(updateData).length === 0) {
-      const user = await prisma.user.findUnique({
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+            createdAt: true,
+          },
+        });
+        return NextResponse.json({ ok: true, data: { user } });
+      } catch (dbError: any) {
+        console.error('Database query error in profile update (get current):', dbError);
+        if (dbError?.message?.includes('MaxClientsInSessionMode') || 
+            dbError?.message?.includes('max clients reached')) {
+          return jsonError(
+            503,
+            'DATABASE_CONNECTION_LIMIT',
+            "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+          )
+        }
+        throw dbError
+      }
+    }
+
+    // Update user
+    let updatedUser
+    try {
+      updatedUser = await prisma.user.update({
         where: { id: userId },
+        data: updateData,
         select: {
           id: true,
           name: true,
@@ -106,25 +189,51 @@ export async function PATCH(req: Request) {
           createdAt: true,
         },
       });
-      return NextResponse.json({ ok: true, data: { user } });
+    } catch (dbError: any) {
+      console.error('Database query error in profile update (update user):', dbError);
+      console.error('Error type:', dbError?.constructor?.name);
+      console.error('Error code:', dbError?.code);
+      
+      // Check for connection limit errors
+      if (dbError?.message?.includes('MaxClientsInSessionMode') || 
+          dbError?.message?.includes('max clients reached')) {
+        return jsonError(
+          503,
+          'DATABASE_CONNECTION_LIMIT',
+          "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+        )
+      }
+      
+      // Check for "Tenant or user not found" error
+      if (dbError?.message?.includes('Tenant or user not found') ||
+          dbError?.message?.includes('tenant or user not found')) {
+        return jsonError(
+          503,
+          'DATABASE_TENANT_ERROR',
+          "Ma'lumotlar bazasi username formati noto'g'ri. Supabase uchun username 'postgres.PROJECT-REF' formatida bo'lishi kerak. TENANT_USER_FIX.md faylini ko'ring."
+        )
+      }
+      
+      return jsonError(500, 'DATABASE_ERROR', "Ma'lumotlar bazasi bilan bog'lanishda xatolik yuz berdi.")
     }
 
-    // Update user
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatarUrl: true,
-        createdAt: true,
-      },
-    });
-
     return NextResponse.json({ ok: true, data: { user: updatedUser } });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Profile update error:', error);
+    console.error('Error type:', error?.constructor?.name);
+    console.error('Error code:', error?.code);
+    console.error('Error message:', error?.message);
+    
+    // Check for connection limit errors
+    if (error?.message?.includes('MaxClientsInSessionMode') || 
+        error?.message?.includes('max clients reached')) {
+      return jsonError(
+        503,
+        'DATABASE_CONNECTION_LIMIT',
+        "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+      )
+    }
+    
     return jsonError(500, 'INTERNAL_ERROR', 'Server xatoligi yuz berdi.');
   }
 }
