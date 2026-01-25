@@ -70,7 +70,7 @@ export async function POST(req: Request) {
 
     }
 
-    if (!verifyPassword(password, user.passwordHash)) {
+    if (!(await verifyPassword(password, user.passwordHash))) {
       return jsonError(401, 'INVALID_CREDENTIALS', "Email yoki parol noto'g'ri.")
 
     }
