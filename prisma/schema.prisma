@@ -56,6 +56,7 @@ model ProjectComment {
 
   @@index([projectId])
   @@index([createdAt])
+
 }
 
 model Notification {
@@ -76,6 +77,9 @@ enum UserRole {
 }enum UserRole {
 
 }enum UserRole {
+
+}enum UserRole {
+
 
 }enum UserRole {
 

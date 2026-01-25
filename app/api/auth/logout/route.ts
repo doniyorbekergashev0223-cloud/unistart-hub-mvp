@@ -1,7 +1,8 @@
+
 import { NextResponse } from 'next/server';
 
-
 import { logAuditEvent, getClientIp, getUserAgent } from '@/lib/audit';
+
 
 
 export const runtime = 'nodejs';
