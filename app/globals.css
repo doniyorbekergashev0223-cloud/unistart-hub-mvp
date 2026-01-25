@@ -3902,35 +3902,92 @@ body {
 
   /* Auth Pages - Mobil uchun */
   .auth-page {
-    padding: 0.5rem;
-    align-items: flex-start;
-    padding-top: 2rem;
+    padding: 1rem;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .auth-container {
     padding: 2rem 1.5rem;
     max-width: 100%;
-    width: calc(100% - 1rem);
-    margin: 0.5rem;
+    width: 100%;
+    margin: 0;
     border-radius: 20px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: 1;
+  }
+
+  .auth-header {
+    margin-bottom: 1.5rem;
   }
 
   .auth-header h1 {
     font-size: 1.75rem;
+    margin-bottom: 0.75rem;
   }
 
   .auth-header h2 {
     font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .auth-header p {
+    font-size: 0.9rem;
   }
 
   .auth-form {
     gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 0;
+  }
+
+  .form-label {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    display: block;
   }
 
   .form-input,
   .form-textarea {
     width: 100%;
     box-sizing: border-box;
+    font-size: 16px; /* iOS zoom'ni oldini olish */
+    padding: 0.875rem 1rem;
+    border-radius: 12px;
+  }
+
+  .auth-button {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+    min-height: 48px;
+    touch-action: manipulation;
+  }
+
+  .form-footer {
+    margin-bottom: 1rem;
+    justify-content: center;
+  }
+
+  .forgot-password-link {
+    font-size: 0.875rem;
+  }
+
+  .auth-footer {
+    padding-top: 1.5rem;
+    font-size: 0.875rem;
+  }
+
+  .auth-link {
+    font-size: 0.875rem;
   }
 
   /* Settings Layout - Mobil uchun */
@@ -4182,6 +4239,29 @@ body {
 
   .auth-container {
     padding: 1.5rem 1rem;
+    border-radius: 16px;
+  }
+
+  .auth-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .auth-header h2 {
+    font-size: 1.125rem;
+  }
+
+  .auth-form {
+    gap: 1rem;
+  }
+
+  .form-input {
+    padding: 0.75rem;
+    font-size: 16px;
+  }
+
+  .auth-button {
+    padding: 0.875rem;
+    font-size: 0.95rem;
   }
 
   .card {
