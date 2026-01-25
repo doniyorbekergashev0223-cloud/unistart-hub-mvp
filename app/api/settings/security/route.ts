@@ -62,17 +62,17 @@ export async function POST(req: Request) {
     }
 
     // Verify current password
-    if (!verifyPassword(currentPassword, user.passwordHash)) {
+    if (!await verifyPassword(currentPassword, user.passwordHash)) {
       return jsonError(401, 'INVALID_PASSWORD', 'Joriy parol noto\'g\'ri.');
     }
 
     // Check if new password is different
-    if (verifyPassword(newPassword, user.passwordHash)) {
+    if (await verifyPassword(newPassword, user.passwordHash)) {
       return jsonError(400, 'SAME_PASSWORD', 'Yangi parol joriy paroldan farq qilishi kerak.');
     }
 
     // Hash new password
-    const newPasswordHash = hashPassword(newPassword);
+    const newPasswordHash = await hashPassword(newPassword);
 
     // Update password
     await prisma.user.update({
