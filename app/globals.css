@@ -1089,6 +1089,9 @@ body {
   padding-bottom: 0.875rem;
   cursor: default;
   font-size: 0.9375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .dropdown-item.role {
@@ -3899,12 +3902,17 @@ body {
 
   /* Auth Pages - Mobil uchun */
   .auth-page {
-    padding: 1rem;
+    padding: 0.5rem;
+    align-items: flex-start;
+    padding-top: 2rem;
   }
 
   .auth-container {
     padding: 2rem 1.5rem;
     max-width: 100%;
+    width: calc(100% - 1rem);
+    margin: 0.5rem;
+    border-radius: 20px;
   }
 
   .auth-header h1 {
@@ -3913,6 +3921,16 @@ body {
 
   .auth-header h2 {
     font-size: 1.25rem;
+  }
+
+  .auth-form {
+    gap: 1.25rem;
+  }
+
+  .form-input,
+  .form-textarea {
+    width: 100%;
+    box-sizing: border-box;
   }
 
   /* Settings Layout - Mobil uchun */
@@ -3975,19 +3993,135 @@ body {
     gap: 1rem;
   }
 
+  /* Submit Page - Mobil uchun */
+  .submit-page {
+    padding: 0.5rem;
+    min-height: 100vh;
+    padding-bottom: 2rem;
+  }
+
+  .submit-container {
+    padding: 1.5rem 1rem;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    min-height: calc(100vh - 1rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .submit-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .submit-header h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .submit-header p {
+    font-size: 0.9rem;
+  }
+
+  /* Project Form - Mobil uchun */
+  .project-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .file-upload-area {
+    min-height: 120px;
+    padding: 1.5rem 1rem;
+  }
+
+  .file-upload-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .file-upload-text {
+    font-size: 0.9rem;
+    margin-top: 0.75rem;
+  }
+
   /* Notification Dropdown - Mobil uchun */
   .notification-dropdown {
-    right: 0.5rem;
-    left: 0.5rem;
-    width: auto;
-    max-width: calc(100vw - 1rem);
+    position: fixed !important;
+    right: 0.5rem !important;
+    left: 0.5rem !important;
+    width: auto !important;
+    max-width: calc(100vw - 1rem) !important;
+    top: auto !important;
+    bottom: 1rem !important;
+    max-height: 70vh !important;
+    margin-top: 0 !important;
+    z-index: 10000 !important;
+  }
+
+  .notification-list {
+    max-height: calc(70vh - 80px) !important;
   }
 
   /* Profile Dropdown - Mobil uchun */
   .profile-dropdown {
-    right: 0.5rem;
-    left: auto;
-    width: 200px;
+    position: fixed !important;
+    right: 0.5rem !important;
+    left: auto !important;
+    width: 280px !important;
+    max-width: calc(100vw - 1rem) !important;
+    top: auto !important;
+    bottom: 1rem !important;
+    margin-top: 0 !important;
+    z-index: 10000 !important;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  /* Profile Avatar - Mobil uchun */
+  .profile-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .profile-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(102, 126, 234, 0.2);
+    flex-shrink: 0;
+  }
+
+  .profile-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.125rem;
+  }
+
+  /* Profile Dropdown Header - Avatar ko'rsatish */
+  .dropdown-item.info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+  }
+
+  .dropdown-item.info::before {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
   }
 
   /* Overlay - Sidebar yopish uchun */

@@ -14,6 +14,14 @@ interface Notification {
   createdAt: string;
 }
 
+interface UserWithAvatar {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatarUrl?: string;
+}
+
 const Topbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { searchProjects, isSearching } = useProjects();
@@ -164,8 +172,17 @@ const Topbar = () => {
     setShowDropdown(false);
   };
 
+  const getUserInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   const dropdownItems = [
-    { label: user?.name || 'Foydalanuvchi', type: 'info' },
+    { label: user?.name || 'Foydalanuvchi', type: 'info', initials: user?.name ? getUserInitials(user.name) : 'U' },
     { label: getRoleLabel(user?.role || 'user'), type: 'role' },
     { label: 'Shaxsiy ma\'lumotlar', type: 'link', action: handleProfileClick },
     { label: 'Sozlamalar', type: 'link', action: handleSettingsClick },
@@ -342,6 +359,30 @@ const Topbar = () => {
                   >
                     {item.label}
                   </button>
+                ) : item.type === 'info' ? (
+                  <div key={index} className={`dropdown-item ${item.type}`}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: (user as any)?.avatarUrl 
+                        ? `url(${(user as any).avatarUrl})` 
+                        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      flexShrink: 0,
+                      border: '2px solid rgba(102, 126, 234, 0.2)',
+                    }}>
+                      {!(user as any)?.avatarUrl && ((item as any).initials || 'U')}
+                    </div>
+                    <span style={{ marginLeft: '0.75rem' }}>{item.label}</span>
+                  </div>
                 ) : (
                   <div key={index} className={`dropdown-item ${item.type}`}>
                     {item.label}
