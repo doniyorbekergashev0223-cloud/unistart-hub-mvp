@@ -70,6 +70,17 @@ model Notification {
   user User @relation(fields: [userId], references: [id])
 }
 
+model InviteCode {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  role      UserRole
+  isActive  Boolean   @default(true)
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([code])
+}
+
 enum UserRole {
   user
   admin
