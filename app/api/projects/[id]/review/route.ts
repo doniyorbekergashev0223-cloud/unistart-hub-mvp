@@ -129,6 +129,34 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (error.message === 'PROJECT_NOT_FOUND') {
       return jsonError(404, 'PROJECT_NOT_FOUND', 'Loyiha topilmadi.')
     }
+    
+    // Database connection errors
+    const errorMessage = error?.message || ''
+    if (errorMessage.includes('MaxClientsInSessionMode') || errorMessage.includes('max clients reached')) {
+      console.error('Database connection limit error:', error)
+      return jsonError(
+        503,
+        'DATABASE_CONNECTION_LIMIT',
+        "Ma'lumotlar bazasi ulanish limitiga yetdi. Iltimos, Vercel'da DATABASE_URL'ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+      )
+    }
+    if (errorMessage.includes('Authentication failed') || errorMessage.includes('database credentials')) {
+      console.error('Database authentication error:', error)
+      return jsonError(
+        503,
+        'DATABASE_AUTHENTICATION_ERROR',
+        "Ma'lumotlar bazasi autentifikatsiya xatosi. Iltimos, DATABASE_URL'dagi parol va username'ni tekshiring. DATABASE_AUTHENTICATION_FIX.md faylini ko'ring."
+      )
+    }
+    if (errorMessage.includes('Tenant or user not found')) {
+      console.error('Database tenant error:', error)
+      return jsonError(
+        503,
+        'DATABASE_TENANT_ERROR',
+        "Ma'lumotlar bazasi username formati noto'g'ri. Supabase uchun username 'postgres.PROJECT-REF' formatida bo'lishi kerak. TENANT_USER_FIX.md faylini ko'ring."
+      )
+    }
+    
     console.error('Review creation error:', error)
     return jsonError(500, 'INTERNAL_ERROR', 'Server xatoligi yuz berdi.')
   }

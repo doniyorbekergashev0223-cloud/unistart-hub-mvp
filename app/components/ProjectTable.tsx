@@ -71,11 +71,20 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
         }, 500);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(errorData.error?.message || 'Ko\'rib chiqishda xatolik yuz berdi');
+        const errorMessage = errorData.error?.message || 'Ko\'rib chiqishda xatolik yuz berdi';
+        
+        // Show more specific error messages
+        if (errorData.error?.code === 'DATABASE_CONNECTION_LIMIT' || 
+            errorData.error?.code === 'DATABASE_AUTHENTICATION_ERROR' ||
+            errorData.error?.code === 'DATABASE_TENANT_ERROR') {
+          alert(`Xatolik: ${errorMessage}\n\nIltimos, Vercel logs'ni tekshiring va tegishli faylni ko'ring.`);
+        } else {
+          alert(`Xatolik: ${errorMessage}`);
+        }
       }
     } catch (error) {
       console.error('Review submission error:', error);
-      alert('Ko\'rib chiqishda xatolik yuz berdi');
+      alert('Ko\'rib chiqishda xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.');
     } finally {
       setSubmittingReview(false);
     }

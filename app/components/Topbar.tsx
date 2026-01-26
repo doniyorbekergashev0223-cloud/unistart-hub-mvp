@@ -299,6 +299,7 @@ const Topbar = () => {
                   bottom: 0,
                   background: 'rgba(0, 0, 0, 0.3)',
                   zIndex: 10000,
+                  pointerEvents: 'auto',
                 }}
               />
               <div className="notification-dropdown">
@@ -408,6 +409,7 @@ const Topbar = () => {
                   bottom: 0,
                   background: 'rgba(0, 0, 0, 0.3)',
                   zIndex: 9999,
+                  pointerEvents: 'auto',
                 }}
               />
               <div className="profile-dropdown">
