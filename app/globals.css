@@ -1161,16 +1161,16 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
-  animation: fadeIn 0.25s ease;
+  animation: fadeIn 0.3s ease;
   padding: 1rem;
-  overflow-y: auto;
+  overflow: hidden; /* Prevent background scroll */
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1187,16 +1187,16 @@ body {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.99) 0%, rgba(255, 255, 255, 0.97) 100%);
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
-  border-radius: 28px;
+  border-radius: 24px;
   padding: 0;
-  max-width: 540px;
+  max-width: 750px;
   width: 100%;
   max-height: calc(100vh - 2rem);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   margin: auto;
@@ -1214,16 +1214,15 @@ body {
 }
 
 .modal-header {
-  padding: 2rem 2.5rem 1.75rem;
-  border-bottom: 2px solid rgba(226, 232, 240, 0.4);
+  padding: 1.75rem 2rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-  border-radius: 28px 28px 0 0;
+  background: #ffffff;
+  border-radius: 24px 24px 0 0;
   flex-shrink: 0;
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 10;
 }
 
@@ -1233,6 +1232,7 @@ body {
   font-weight: 700;
   color: #0f172a;
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .modal-close {
@@ -1263,47 +1263,136 @@ body {
   transform: scale(0.95);
 }
 
-.review-form {
-  padding: 2rem 2.5rem;
+.modal-body {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  min-height: 0; /* Allow flex child to shrink */
+}
+
+.review-form {
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.modal-actions {
+.review-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.review-form .form-label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.review-form .form-select {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  border-radius: 12px;
+  border: 2px solid rgba(226, 232, 240, 0.8);
+  background: #ffffff;
+  color: #0f172a;
+  transition: all 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.review-form .form-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.review-form .form-textarea {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  border-radius: 12px;
+  border: 2px solid rgba(226, 232, 240, 0.8);
+  background: #ffffff;
+  color: #0f172a;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 120px;
+  transition: all 0.2s ease;
+}
+
+.review-form .form-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.modal-footer {
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
-  padding: 1.75rem 2.5rem 2rem;
-  border-top: 2px solid rgba(226, 232, 240, 0.4);
-  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%);
-  backdrop-filter: blur(10px);
+  padding: 1.5rem 2rem;
+  border-top: 1px solid rgba(226, 232, 240, 0.6);
+  background: #ffffff;
   flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-  border-radius: 0 0 28px 28px;
+  border-radius: 0 0 24px 24px;
 }
 
-.cancel-button {
-  background: rgba(241, 245, 249, 0.8);
-  backdrop-filter: blur(10px);
+.modal-footer .cancel-button {
+  background: #ffffff;
   color: #64748b;
-  border: 1px solid rgba(226, 232, 240, 0.5);
+  border: 2px solid rgba(226, 232, 240, 0.8);
   padding: 0.875rem 1.75rem;
-  border-radius: 14px;
-  font-weight: 500;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9375rem;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
+  min-width: 120px;
 }
 
-.cancel-button:hover {
-  background: rgba(226, 232, 240, 0.9);
+.modal-footer .cancel-button:hover {
+  background: #f8fafc;
   color: #475569;
+  border-color: rgba(226, 232, 240, 1);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.modal-footer .cancel-button:active {
+  transform: translateY(0);
+}
+
+.modal-footer .submit-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.875rem 1.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.modal-footer .submit-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.modal-footer .submit-button:active {
+  transform: translateY(0);
+}
+
+.modal-footer .submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .review-button {
@@ -4724,39 +4813,28 @@ body {
     font-size: 1.25rem;
   }
 
-  /* Modal - Mobil uchun (Professional) */
+  /* Modal - Mobil uchun (Professional, Centered) */
   .modal-overlay {
-    padding: 0.5rem !important;
-    align-items: flex-end !important; /* Pastga ko'chirish */
+    padding: 1rem !important;
+    align-items: center !important; /* Markazda */
     justify-content: center !important;
     background: rgba(0, 0, 0, 0.6) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
   }
 
   .modal-content {
-    max-width: 100% !important;
+    max-width: calc(100vw - 2rem) !important;
     width: 100% !important;
-    max-height: 85vh !important;
-    border-radius: 28px 28px 0 0 !important; /* Pastdan yumaloq */
+    max-height: calc(100vh - 2rem) !important;
+    border-radius: 20px !important;
     margin: 0 !important;
-    animation: slideUpMobileModal 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  }
-
-  @keyframes slideUpMobileModal {
-    from {
-      opacity: 0;
-      transform: translateY(100%);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
   .modal-header {
     padding: 1.5rem 1.5rem 1.25rem !important;
-    border-radius: 28px 28px 0 0 !important;
+    border-radius: 20px 20px 0 0 !important;
   }
 
   .modal-header h3 {
@@ -4772,8 +4850,12 @@ body {
     padding: 0 !important;
   }
 
+  .modal-body {
+    max-height: calc(100vh - 200px) !important; /* Header + Footer uchun joy qoldirish */
+  }
+
   .review-form {
-    padding: 1.5rem 1.5rem !important;
+    padding: 1.5rem !important;
     gap: 1.25rem !important;
   }
 
@@ -4784,15 +4866,15 @@ body {
   .review-form .form-label {
     font-size: 0.875rem !important;
     font-weight: 600 !important;
-    margin-bottom: 0.75rem !important;
+    margin-bottom: 0.5rem !important;
     color: #374151 !important;
   }
 
   .review-form .form-select {
     width: 100% !important;
-    padding: 1rem !important;
+    padding: 0.875rem 1rem !important;
     font-size: 16px !important; /* iOS zoom fix */
-    border-radius: 14px !important;
+    border-radius: 12px !important;
     border: 2px solid rgba(226, 232, 240, 0.8) !important;
     background: #ffffff !important;
     -webkit-appearance: none !important;
@@ -4802,31 +4884,28 @@ body {
   .review-form .form-textarea {
     width: 100% !important;
     min-height: 120px !important;
-    padding: 1rem !important;
+    padding: 0.875rem 1rem !important;
     font-size: 16px !important; /* iOS zoom fix */
-    border-radius: 14px !important;
+    border-radius: 12px !important;
     border: 2px solid rgba(226, 232, 240, 0.8) !important;
     resize: vertical !important;
   }
 
-  .modal-actions {
-    padding: 1.5rem !important;
-    flex-direction: column-reverse !important; /* Mobile'da pastdan yuqoriga */
+  .modal-footer {
+    padding: 1.25rem 1.5rem !important;
+    flex-direction: column !important;
     gap: 0.75rem !important;
+    border-radius: 0 0 20px 20px !important;
   }
 
-  .modal-actions .cancel-button,
-  .modal-actions .submit-button {
+  .modal-footer .cancel-button,
+  .modal-footer .submit-button {
     width: 100% !important;
-    padding: 1.125rem !important;
+    padding: 1rem !important;
     font-size: 1rem !important;
     font-weight: 600 !important;
-    border-radius: 14px !important;
-    min-height: 52px !important;
+    border-radius: 12px !important;
+    min-height: 48px !important;
     touch-action: manipulation !important;
-  }
-
-  .modal-actions .submit-button {
-    order: -1 !important; /* Submit button birinchi (yuqorida) */
   }
 }

@@ -90,6 +90,19 @@ export default function ProjectDetailPage() {
     loadProject()
   }, [user, projectId])
 
+  // Disable body scroll when modal opens
+  useEffect(() => {
+    if (reviewModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    // Cleanup: restore body scroll on unmount
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [reviewModal]);
+
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user || !projectId) return
@@ -388,65 +401,68 @@ export default function ProjectDetailPage() {
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                       <div className="modal-header">
                         <h3>Loyihani ko'rib chiqish</h3>
-                        <button onClick={() => setReviewModal(false)} className="modal-close">
+                        <button onClick={() => setReviewModal(false)} className="modal-close" aria-label="Yopish">
                           ×
                         </button>
                       </div>
 
-                      <form onSubmit={handleReviewSubmit} className="review-form">
-                        <div className="form-group">
-                          <label htmlFor="review-status" className="form-label">
-                            Status *
-                          </label>
-                          <select
-                            id="review-status"
-                            value={reviewForm.status}
-                            onChange={(e) =>
-                              setReviewForm((prev) => ({ ...prev, status: e.target.value }))
-                            }
-                            className="form-select"
-                            required
-                          >
-                            <option value="Jarayonda">Jarayonda</option>
-                            <option value="Qabul qilindi">Qabul qilindi</option>
-                            <option value="Rad etildi">Rad etildi</option>
-                          </select>
-                        </div>
+                      <div className="modal-body">
+                        <form id="review-form-detail" onSubmit={handleReviewSubmit} className="review-form">
+                          <div className="form-group">
+                            <label htmlFor="review-status-detail" className="form-label">
+                              Status *
+                            </label>
+                            <select
+                              id="review-status-detail"
+                              value={reviewForm.status}
+                              onChange={(e) =>
+                                setReviewForm((prev) => ({ ...prev, status: e.target.value }))
+                              }
+                              className="form-select"
+                              required
+                            >
+                              <option value="Jarayonda">Jarayonda</option>
+                              <option value="Qabul qilindi">Qabul qilindi</option>
+                              <option value="Rad etildi">Rad etildi</option>
+                            </select>
+                          </div>
 
-                        <div className="form-group">
-                          <label htmlFor="review-comment" className="form-label">
-                            Izoh *
-                          </label>
-                          <textarea
-                            id="review-comment"
-                            value={reviewForm.comment}
-                            onChange={(e) =>
-                              setReviewForm((prev) => ({ ...prev, comment: e.target.value }))
-                            }
-                            className="form-textarea"
-                            placeholder="Loyiha haqida fikringizni yozing..."
-                            rows={4}
-                            required
-                          />
-                        </div>
+                          <div className="form-group">
+                            <label htmlFor="review-comment-detail" className="form-label">
+                              Izoh *
+                            </label>
+                            <textarea
+                              id="review-comment-detail"
+                              value={reviewForm.comment}
+                              onChange={(e) =>
+                                setReviewForm((prev) => ({ ...prev, comment: e.target.value }))
+                              }
+                              className="form-textarea"
+                              placeholder="Loyiha haqida fikringizni yozing..."
+                              rows={4}
+                              required
+                            />
+                          </div>
+                        </form>
+                      </div>
 
-                        <div className="modal-actions">
-                          <button
-                            type="button"
-                            onClick={() => setReviewModal(false)}
-                            className="cancel-button"
-                          >
-                            Bekor qilish
-                          </button>
-                          <button
-                            type="submit"
-                            disabled={submittingReview}
-                            className="submit-button"
-                          >
-                            {submittingReview ? 'Yuborilmoqda...' : 'Yuborish'}
-                          </button>
-                        </div>
-                      </form>
+                      <div className="modal-footer">
+                        <button
+                          type="button"
+                          onClick={() => setReviewModal(false)}
+                          className="cancel-button"
+                        >
+                          Bekor qilish
+                        </button>
+                        <button
+                          type="submit"
+                          form="review-form-detail"
+                          disabled={submittingReview}
+                          className="submit-button"
+                        >
+                          {submittingReview ? 'Saqlanmoqda...' : 'Saqlash'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
