@@ -69,50 +69,58 @@ export async function GET() {
       )
     }
 
-    // Get all statistics in parallel for better performance
-    // Each query has individual error handling to prevent one failure from breaking all
-    const [
-      usersCount,
-      totalProjects,
-      activeProjects,
-      rejectedProjects,
-    ] = await Promise.all([
-      // Total registered users
-      prisma.user.count().catch((err: any) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('User count error:', err?.message || err)
-        }
-        return 0
-      }),
+    // Fixed: Get all statistics in a single transaction to ensure consistency
+    // This prevents data from changing between queries on refresh
+    const stats = await prisma.$transaction(async (tx) => {
+      const [
+        usersCount,
+        totalProjects,
+        activeProjects,
+        rejectedProjects,
+      ] = await Promise.all([
+        // Total registered users
+        tx.user.count().catch((err: any) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('User count error:', err?.message || err)
+          }
+          return 0
+        }),
 
-      // Total projects
-      prisma.project.count().catch((err: any) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Total projects count error:', err?.message || err)
-        }
-        return 0
-      }),
+        // Total projects
+        tx.project.count().catch((err: any) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Total projects count error:', err?.message || err)
+          }
+          return 0
+        }),
 
-      // Active projects (status = JARAYONDA)
-      prisma.project.count({
-        where: { status: 'JARAYONDA' as any }
-      }).catch((err: any) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Active projects count error:', err?.message || err)
-        }
-        return 0
-      }),
+        // Active projects (status = JARAYONDA)
+        tx.project.count({
+          where: { status: 'JARAYONDA' as any }
+        }).catch((err: any) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Active projects count error:', err?.message || err)
+          }
+          return 0
+        }),
 
-      // Rejected projects (status = RAD_ETILDI)
-      prisma.project.count({
-        where: { status: 'RAD_ETILDI' as any }
-      }).catch((err: any) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Rejected projects count error:', err?.message || err)
-        }
-        return 0
-      }),
-    ])
+        // Rejected projects (status = RAD_ETILDI)
+        tx.project.count({
+          where: { status: 'RAD_ETILDI' as any }
+        }).catch((err: any) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Rejected projects count error:', err?.message || err)
+          }
+          return 0
+        }),
+      ])
+
+      return { usersCount, totalProjects, activeProjects, rejectedProjects }
+    }, {
+      timeout: 10000, // 10 second timeout
+    })
+
+    const { usersCount, totalProjects, activeProjects, rejectedProjects } = stats
 
     // Fixed: Add cache control headers to prevent inconsistent data on refresh
     return NextResponse.json(

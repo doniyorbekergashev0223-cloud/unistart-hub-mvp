@@ -71,6 +71,7 @@ body {
   overflow-y: auto; /* Fixed: Allow vertical scrolling if content exceeds viewport */
   overflow-x: hidden; /* Prevent horizontal scroll */
   position: relative;
+  z-index: 1; /* Fixed: Lower z-index so modal appears above */
   transition: background 0.3s ease;
 }
 
@@ -85,6 +86,11 @@ body {
   border-radius: 0 24px 24px 0;
   margin: 1rem 0 1rem 1rem;
   overflow: hidden;
+  position: relative;
+  z-index: 1; /* Fixed: Lower z-index so modal appears on top */
+  z-index: 1; /* Fixed: Lower z-index so modal appears on top */
+  position: relative;
+  z-index: 1; /* Fixed: Lower z-index so modal appears above */
   transition: background 0.3s ease, color 0.3s ease;
 }
 
@@ -205,7 +211,7 @@ body {
   border-radius: 0 0 20px 20px;
   margin: 0 1rem 0 0;
   position: relative;
-  z-index: 100;
+  z-index: 100; /* Keep topbar above content but below modal */
 }
 
 .topbar-left {
@@ -1169,7 +1175,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10002; /* Above notification dropdown (10001) and all other elements */
+  z-index: 99999; /* Fixed: Very high z-index to ensure modal is always on top of all layout elements */
   animation: fadeIn 0.3s ease;
   padding: 1rem;
   overflow: hidden; /* Prevent background scroll */
@@ -1200,7 +1206,8 @@ body {
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.8);
   animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative; /* Keep relative for flex centering in overlay */
+  position: relative;
+  z-index: 100000; /* Fixed: Ensure modal content is above overlay */
   margin: 0 auto; /* Center horizontally */
 }
 
