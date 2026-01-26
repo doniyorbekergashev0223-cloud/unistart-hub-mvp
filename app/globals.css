@@ -608,7 +608,7 @@ body {
   border-radius: 24px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(226, 232, 240, 0.5);
-  overflow: hidden;
+  overflow: visible; /* Fixed: Allow projects list to be fully visible */
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -1193,15 +1193,15 @@ body {
   padding: 0;
   max-width: 750px;
   width: 100%;
-  max-height: 90vh; /* Fixed: Use 90vh instead of calc(100vh - 2rem) */
+  max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.8);
   animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  margin: auto;
+  position: relative; /* Keep relative for flex centering in overlay */
+  margin: 0 auto; /* Center horizontally */
 }
 
 @keyframes slideUp {
@@ -1226,6 +1226,8 @@ body {
   flex-shrink: 0;
   position: relative;
   z-index: 10;
+  min-height: 80px; /* Fixed: Ensure consistent header height */
+  box-sizing: border-box;
 }
 
 .modal-header h3 {
@@ -1266,11 +1268,12 @@ body {
 }
 
 .modal-body {
-  flex: 1;
+  flex: 1 1 auto;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  min-height: 0; /* Allow flex child to shrink */
-  max-height: calc(90vh - 180px); /* Fixed: Reserve space for header (~80px) + footer (~100px) */
+  min-height: 0;
+  max-height: none; /* Let flex handle height, constrained by parent max-height */
 }
 
 .review-form {
@@ -1278,6 +1281,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  min-height: 0; /* Allow form to shrink */
+  box-sizing: border-box;
 }
 
 .review-form .form-group {
@@ -1342,6 +1347,10 @@ body {
   background: #ffffff;
   flex-shrink: 0;
   border-radius: 0 0 24px 24px;
+  position: relative;
+  z-index: 1;
+  min-height: 100px; /* Fixed: Ensure consistent footer height */
+  box-sizing: border-box;
 }
 
 .modal-footer .cancel-button {
@@ -3988,7 +3997,8 @@ body {
 
   /* Project Table - Mobil uchun */
   .table-container {
-    overflow-x: auto;
+    overflow-x: visible; /* Fixed: Prevent horizontal scroll, allow content visibility */
+    overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     border-radius: 16px;
     margin: 0 -1rem;
@@ -4830,16 +4840,19 @@ body {
 
   .modal-content {
     max-width: calc(100vw - 2rem) !important;
-    width: 100% !important;
-    max-height: 90vh !important; /* Fixed: Use 90vh for consistency */
+    width: calc(100vw - 2rem) !important; /* Fixed: Prevent horizontal overflow */
+    max-height: 90vh !important;
     border-radius: 20px !important;
-    margin: 0 !important;
+    margin: 0 auto !important; /* Center horizontally */
     animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-sizing: border-box !important; /* Ensure padding is included in width */
   }
 
   .modal-header {
     padding: 1.5rem 1.5rem 1.25rem !important;
     border-radius: 20px 20px 0 0 !important;
+    min-height: 70px !important; /* Fixed: Ensure consistent header height on mobile */
+    box-sizing: border-box !important;
   }
 
   .modal-header h3 {
@@ -4856,7 +4869,11 @@ body {
   }
 
   .modal-body {
-    max-height: calc(90vh - 180px) !important; /* Fixed: Reserve space for header (~80px) + footer (~100px) */
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    min-height: 0 !important;
+    max-height: none !important; /* Let flex handle height */
   }
 
   .review-form {
@@ -4901,6 +4918,8 @@ body {
     flex-direction: column !important;
     gap: 0.75rem !important;
     border-radius: 0 0 20px 20px !important;
+    min-height: 120px !important; /* Fixed: Ensure consistent footer height on mobile (2 buttons) */
+    box-sizing: border-box !important;
   }
 
   .modal-footer .cancel-button,
