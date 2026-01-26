@@ -65,26 +65,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Restore user from localStorage on mount
+  // CRITICAL: Do not logout user on restore errors - only on truly invalid sessions
   useEffect(() => {
     const restoreSession = async () => {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
-          const parsedUser = JSON.parse(stored) as User;
-          // Verify session is still valid by checking with API
-          const isValid = await verifySession(parsedUser);
-          if (isValid) {
+          try {
+            const parsedUser = JSON.parse(stored) as User;
+            // Set user immediately to prevent flash of login page
             setUser(parsedUser);
-          } else {
-            // Session invalid - clear storage
+            // Verify session in background (non-blocking)
+            const isValid = await verifySession(parsedUser);
+            if (!isValid) {
+              // Only clear if session is truly invalid (401 response)
+              localStorage.removeItem(STORAGE_KEY);
+              setUser(null);
+            }
+          } catch (parseError) {
+            // Invalid stored data - clear it
             localStorage.removeItem(STORAGE_KEY);
             setUser(null);
           }
         }
       } catch (error) {
-        console.error('Failed to restore session:', error);
-        localStorage.removeItem(STORAGE_KEY);
-        setUser(null);
+        // Storage errors - don't logout, just log
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to restore session:', error);
+        }
+        // Don't clear storage on errors - might be temporary
       } finally {
         setIsLoading(false);
       }
@@ -94,6 +103,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // Verify session with backend
+  // CRITICAL: Network errors should NOT logout user - only invalid sessions should
   const verifySession = async (user: User): Promise<boolean> => {
     try {
       const response = await fetch('/api/auth/verify', {
@@ -103,15 +113,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           'x-user-role': user.role,
         },
         cache: 'no-store', // Prevent caching
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(5000), // 5 second timeout
       });
       
+      // Network errors or timeouts - keep user logged in (session might still be valid)
       if (!response.ok) {
-        return false;
+        // Only logout on 401 (unauthorized) - means session is truly invalid
+        if (response.status === 401) {
+          return false;
+        }
+        // For other errors (503, 500, etc.), assume session is still valid
+        // This prevents logout on temporary API failures
+        return true;
       }
       
       const result = await response.json().catch(() => null);
       if (!result || !result.ok) {
-        return false;
+        // Only logout if explicitly told session is invalid
+        if (result?.error?.code === 'INVALID_SESSION') {
+          return false;
+        }
+        // Other errors - keep user logged in
+        return true;
       }
       
       // Update user data if avatarUrl changed
@@ -125,9 +149,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       return true;
-    } catch (error) {
-      console.error('Session verification error:', error);
-      return false;
+    } catch (error: any) {
+      // Network errors, timeouts, etc. - DO NOT logout user
+      // Session might still be valid, just can't verify right now
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Session verification failed (network error):', error?.message || error);
+        console.warn('Keeping user logged in to prevent false logout');
+      }
+      return true; // Keep user logged in on network errors
     }
   };
 

@@ -18,11 +18,17 @@ export async function GET() {
 
   const prisma = getPrisma()
   if (!prisma) {
-    return jsonError(
-      503,
-      'DATABASE_NOT_CONFIGURED',
-      "Ma'lumotlar bazasi sozlanmagan (DATABASE_URL yo'q)."
-    )
+    // CRITICAL: Return ok: true with zeros - never fail stats API
+    // This prevents cascading failures and logout bugs
+    return NextResponse.json({
+      ok: true,
+      data: {
+        usersCount: 0,
+        totalProjects: 0,
+        activeProjects: 0,
+        rejectedProjects: 0,
+      },
+    })
   }
 
   try {

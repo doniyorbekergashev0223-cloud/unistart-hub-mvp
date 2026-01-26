@@ -4325,32 +4325,48 @@ body {
     overflow: visible !important;
   }
 
-  /* Notification Dropdown - Premium Mobile (FIXED, DOWNWARD, VISIBLE) */
+  /* Topbar height calculation for mobile */
+  .topbar {
+    min-height: 70px !important;
+    padding: 1rem 1rem !important;
+  }
+
+  /* Notification Dropdown - Premium Mobile (FIXED, DOWNWARD FROM HEADER) */
   .notification-dropdown {
     position: fixed !important;
     right: 0.75rem !important;
     left: 0.75rem !important;
     width: auto !important;
     max-width: calc(100vw - 1.5rem) !important;
-    top: auto !important;
-    bottom: 1rem !important;
-    max-height: 75vh !important;
+    top: 75px !important; /* Below topbar (70px height + 5px margin) */
+    bottom: auto !important;
+    max-height: calc(100vh - 90px) !important; /* Leave space for topbar and bottom margin */
     margin: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
+    margin-top: 0.5rem !important;
     transform: none !important;
     z-index: 10001 !important; /* Above profile dropdown */
-    border-radius: 24px !important;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
     border: 1px solid rgba(255, 255, 255, 0.5) !important;
     backdrop-filter: blur(40px) saturate(180%) !important;
     -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
-    animation: premiumSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    animation: premiumSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
     overflow: hidden !important;
     display: flex !important;
     flex-direction: column !important;
     will-change: transform, opacity !important;
+  }
+
+  @keyframes premiumSlideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 
   @keyframes premiumSlideUp {
@@ -4422,27 +4438,27 @@ body {
     font-size: 1rem !important;
   }
 
-  /* Profile Dropdown - Premium Mobile (FIXED, DOWNWARD, VISIBLE) */
+  /* Profile Dropdown - Premium Mobile (FIXED, DOWNWARD FROM HEADER) */
   .profile-dropdown {
     position: fixed !important;
     right: 0.75rem !important;
     left: auto !important;
-    width: 320px !important;
+    width: 300px !important;
     max-width: calc(100vw - 1.5rem) !important;
-    top: auto !important;
-    bottom: 1rem !important;
+    top: 75px !important; /* Below topbar (70px height + 5px margin) */
+    bottom: auto !important;
+    max-height: calc(100vh - 90px) !important; /* Leave space for topbar and bottom margin */
     margin: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
+    margin-top: 0.5rem !important;
     transform: none !important;
     z-index: 10000 !important; /* Below notification dropdown (10001) */
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
     border: 1px solid rgba(255, 255, 255, 0.5) !important;
     backdrop-filter: blur(40px) saturate(180%) !important;
     -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
-    border-radius: 24px !important;
-    animation: premiumSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    border-radius: 20px !important;
+    animation: premiumSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
     overflow: hidden !important;
     will-change: transform, opacity !important;
   }

@@ -318,7 +318,7 @@ export default function ProjectDetailPage() {
                     </div>
 
                     {/* Review Events */}
-                    {project.reviews.length === 0 ? (
+                    {(!project.reviews || project.reviews.length === 0) ? (
                       <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
                         Hozircha ko'rib chiqilmagan
                       </div>

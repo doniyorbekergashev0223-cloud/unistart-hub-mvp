@@ -14,15 +14,31 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    // Wait for session restore to complete before redirecting
+    // CRITICAL: Wait for session restore to complete before redirecting
+    // Do NOT redirect on loading state - this prevents false logouts
     if (!isLoading && !isAuthenticated && !isRedirecting) {
       setIsRedirecting(true);
       router.push('/auth/login');
     }
   }, [isAuthenticated, isLoading, router, isRedirecting]);
 
-  // Show nothing while loading or redirecting
-  if (isLoading || !isAuthenticated || isRedirecting) {
+  // Show loading state while checking auth (prevents flash of login page)
+  if (isLoading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      }}>
+        <div style={{ color: 'white', fontSize: '1.125rem' }}>Yuklanmoqda...</div>
+      </div>
+    );
+  }
+
+  // Redirect only if truly not authenticated (after loading completes)
+  if (!isAuthenticated || isRedirecting) {
     return null;
   }
 

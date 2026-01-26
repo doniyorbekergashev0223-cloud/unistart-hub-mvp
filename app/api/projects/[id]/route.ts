@@ -89,6 +89,23 @@ export async function GET(
       return jsonError(403, 'FORBIDDEN', "Ruxsat yo'q.")
     }
 
+    // Get reviews/comments for this project
+    // Map admin/expert comments to reviews format
+    const reviews = project.comments && Array.isArray(project.comments)
+      ? project.comments
+          .filter((c: any) => c.authorRole === 'admin' || c.authorRole === 'expert')
+          .map((comment: any) => ({
+            id: comment.id,
+            reviewerId: comment.userId || '',
+            reviewerName: comment.authorRole === 'admin' ? 'Admin' : 'Ekspert',
+            reviewerRole: comment.authorRole,
+            status: ENUM_TO_STATUS[project.status] || project.status,
+            statusEnum: project.status,
+            comment: comment.content || '',
+            createdAt: comment.createdAt,
+          }))
+      : []
+
     const formattedProject = {
       id: project.id,
       title: project.title,
@@ -104,12 +121,15 @@ export async function GET(
         email: project.user.email,
         role: project.user.role,
       },
-      comments: project.comments.map((comment) => ({
-        id: comment.id,
-        content: comment.content,
-        authorRole: comment.authorRole,
-        createdAt: comment.createdAt,
-      })),
+      reviews: reviews, // Always return array, even if empty
+      comments: project.comments
+        ? project.comments.map((comment) => ({
+            id: comment.id,
+            content: comment.content,
+            authorRole: comment.authorRole,
+            createdAt: comment.createdAt,
+          }))
+        : [],
     }
 
     return NextResponse.json({
