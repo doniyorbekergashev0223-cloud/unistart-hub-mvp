@@ -208,6 +208,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (response?.ok && response.data?.user) {
         saveUser(response.data.user);
+        // Trigger stats refetch event for real-time statistics update
+        window.dispatchEvent(new CustomEvent('stats-refetch'));
         return true;
       }
 

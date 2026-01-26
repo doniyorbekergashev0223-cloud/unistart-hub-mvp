@@ -138,6 +138,9 @@ const ProjectForm = () => {
 
       addProject(projectForContext);
 
+      // Trigger stats refetch event for real-time statistics update
+      window.dispatchEvent(new CustomEvent('stats-refetch'));
+
       // Reset form
       setFormData({
         projectName: '',

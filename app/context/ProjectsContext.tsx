@@ -225,6 +225,9 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) 
 
         // Real DB dan yangilab olamiz
         await loadProjects();
+        
+        // Trigger stats refetch event for real-time statistics update
+        window.dispatchEvent(new CustomEvent('stats-refetch'));
       } catch {
         setProjects(prevProjects => [project, ...prevProjects]);
       }

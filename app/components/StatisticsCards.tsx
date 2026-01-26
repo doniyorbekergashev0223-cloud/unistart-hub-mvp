@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import '../styles/StatisticsCards.css';
 
 interface DashboardStats {
@@ -13,77 +13,102 @@ const StatisticsCards = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
+
+  const fetchStats = useCallback(async (showLoading = false) => {
+    // Cancel previous request if exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    
+    if (showLoading) {
+      setLoading(true);
+    }
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/dashboard/stats', {
+        cache: 'no-store', // Prevent caching
+        signal: abortControllerRef.current.signal, // Add abort signal to prevent race conditions
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
+      
+      const result = await response.json().catch(() => null);
+
+      if (!isMountedRef.current || abortControllerRef.current.signal.aborted) return;
+
+      if (!response.ok || !result || !result.ok) {
+        throw new Error(result?.error?.message || 'Statistika yuklanmadi');
+      }
+
+      if (result.data) {
+        setStats(result.data);
+        setError(null);
+      } else {
+        throw new Error('Statistika ma\'lumotlari topilmadi');
+      }
+    } catch (err: any) {
+      if (!isMountedRef.current || abortControllerRef.current.signal.aborted) return;
+      
+      // Ignore abort errors
+      if (err.name === 'AbortError') return;
+      
+      console.error('Failed to fetch dashboard stats:', err);
+      setError('Statistika yuklanmadi');
+      // Set default values for graceful degradation
+      setStats({
+        usersCount: 0,
+        totalProjects: 0,
+        activeProjects: 0,
+        rejectedProjects: 0,
+      });
+    } finally {
+      if (isMountedRef.current && !abortControllerRef.current.signal.aborted) {
+        setLoading(false);
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    let abortController: AbortController | null = null;
+    isMountedRef.current = true;
     
-    const fetchStats = async () => {
-      // Fixed: Cancel previous request if component re-renders
-      if (abortController) {
-        abortController.abort();
+    // Initial fetch
+    void fetchStats(true);
+    
+    // Set up polling: refetch stats every 10 seconds
+    pollingIntervalRef.current = setInterval(() => {
+      if (isMountedRef.current) {
+        void fetchStats(false); // Don't show loading spinner on polling
       }
-      abortController = new AbortController();
-      
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const response = await fetch('/api/dashboard/stats', {
-          cache: 'no-store', // Prevent caching
-          signal: abortController.signal, // Fixed: Add abort signal to prevent race conditions
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0',
-          },
-        });
-        
-        const result = await response.json().catch(() => null);
-
-        if (!isMounted || abortController.signal.aborted) return;
-
-        if (!response.ok || !result || !result.ok) {
-          throw new Error(result?.error?.message || 'Statistika yuklanmadi');
-        }
-
-        if (result.data) {
-          setStats(result.data);
-          setError(null);
-        } else {
-          throw new Error('Statistika ma\'lumotlari topilmadi');
-        }
-      } catch (err: any) {
-        if (!isMounted || abortController.signal.aborted) return;
-        
-        // Ignore abort errors
-        if (err.name === 'AbortError') return;
-        
-        console.error('Failed to fetch dashboard stats:', err);
-        setError('Statistika yuklanmadi');
-        // Set default values for graceful degradation
-        setStats({
-          usersCount: 0,
-          totalProjects: 0,
-          activeProjects: 0,
-          rejectedProjects: 0,
-        });
-      } finally {
-        if (isMounted && !abortController.signal.aborted) {
-          setLoading(false);
-        }
+    }, 10000); // 10 seconds
+    
+    // Listen for custom events to trigger immediate refetch
+    const handleStatsRefetch = () => {
+      if (isMountedRef.current) {
+        void fetchStats(false);
       }
     };
-
-    void fetchStats();
+    
+    window.addEventListener('stats-refetch', handleStatsRefetch);
     
     return () => {
-      isMounted = false;
-      if (abortController) {
-        abortController.abort();
+      isMountedRef.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+      window.removeEventListener('stats-refetch', handleStatsRefetch);
     };
-  }, []);
+  }, [fetchStats]);
 
   const formatNumber = (num: number): string => {
     return num.toLocaleString('uz-UZ');
