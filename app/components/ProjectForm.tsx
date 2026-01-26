@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '../context/ProjectsContext';
+import { useAuth } from '../context/AuthContext';
 
 interface FormData {
   projectName: string;
@@ -14,6 +15,7 @@ interface FormData {
 const ProjectForm = () => {
   const router = useRouter();
   const { addProject } = useProjects();
+  const { user } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     projectName: '',
     description: '',
@@ -21,6 +23,7 @@ const ProjectForm = () => {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
@@ -50,6 +53,14 @@ const ProjectForm = () => {
       return;
     }
 
+    if (!user) {
+      alert('Iltimos, avval tizimga kiring.');
+      router.push('/auth/login');
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
       // Create FormData for file upload
       const formDataToSend = new FormData();
@@ -62,11 +73,14 @@ const ProjectForm = () => {
         formDataToSend.append('file', selectedFile);
       }
 
-      // Submit to API
+      // Submit to API with authentication headers
       const response = await fetch('/api/projects', {
         method: 'POST',
+        headers: {
+          'x-user-id': user.id,
+          'x-user-role': user.role,
+        },
         body: formDataToSend,
-        // Note: Authorization headers will be added by the API route via user context
       });
 
       if (!response.ok) {
@@ -107,6 +121,8 @@ const ProjectForm = () => {
       console.error('Submission error:', error);
       // In a real app, you might want to show a toast notification here
       alert(error instanceof Error ? error.message : 'Loyiha yuborishda xatolik yuz berdi');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -224,8 +240,8 @@ const ProjectForm = () => {
           )}
         </div>
 
-        <button type="submit" className="submit-button">
-          Yuborish
+        <button type="submit" className="submit-button" disabled={isSubmitting}>
+          {isSubmitting ? 'Yuborilmoqda...' : 'Yuborish'}
         </button>
       </form>
     </div>

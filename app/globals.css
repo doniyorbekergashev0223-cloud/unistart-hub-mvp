@@ -4210,21 +4210,18 @@ body {
   }
 
   .submit-button {
-    width: calc(100% - 2rem) !important;
-    max-width: calc(100% - 2rem) !important;
+    width: 100% !important;
+    max-width: 100% !important;
     padding: 1.25rem !important;
     font-size: 1.0625rem !important;
     font-weight: 700 !important;
     border-radius: 16px !important;
-    margin: 0 1rem !important;
-    margin-top: 2rem !important;
-    margin-bottom: 1rem !important;
+    margin: 2rem 0 1rem 0 !important;
     min-height: 56px !important;
     touch-action: manipulation !important;
     box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4) !important;
-    position: sticky !important;
-    bottom: 1rem !important;
-    z-index: 100 !important;
+    position: relative !important; /* Sticky emas - scroll qilgandan keyin ko'rinadi */
+    z-index: 10 !important;
     background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
     border: none !important;
     color: white !important;
@@ -4240,6 +4237,7 @@ body {
   .submit-button:disabled {
     opacity: 0.6 !important;
     cursor: not-allowed !important;
+    transform: none !important;
   }
 
   .form-help {
