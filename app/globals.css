@@ -1418,6 +1418,218 @@ body {
   transform: none;
 }
 
+/* Admin Review Desktop Layout (Side-by-side) */
+.admin-review-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Hide projects list on desktop when review is open */
+@media (min-width: 1024px) {
+  .projects-list-container.desktop-hidden {
+    display: none;
+  }
+}
+
+/* Desktop: Side-by-side layout (min-width: 1024px) */
+.admin-review-desktop {
+  display: none; /* Hidden by default, shown on desktop */
+}
+
+@media (min-width: 1024px) {
+  .admin-review-desktop {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    position: static; /* Fixed: Normal page flow, not fixed overlay */
+    z-index: 1;
+    padding: 0;
+    width: 100%;
+  }
+
+  .admin-review-desktop-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .admin-review-back-button {
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.5rem 0;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .admin-review-back-button:hover {
+    color: #0f172a;
+  }
+
+  .admin-review-desktop-content {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+
+  .admin-review-left {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .admin-review-right {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .admin-review-project-info {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+    padding: 2rem;
+    position: sticky;
+    top: 2rem;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+  }
+
+  .admin-review-project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  }
+
+  .admin-review-project-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    flex: 1;
+  }
+
+  .admin-review-close {
+    background: rgba(241, 245, 249, 0.8);
+    border: none;
+    font-size: 1.75rem;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    font-weight: 300;
+    margin-left: 1rem;
+  }
+
+  .admin-review-close:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    transform: scale(1.1);
+  }
+
+  .admin-review-project-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .admin-review-detail-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .admin-review-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .admin-review-value {
+    font-size: 1rem;
+    color: #0f172a;
+    line-height: 1.6;
+  }
+
+  .admin-review-form-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 2rem;
+    max-height: calc(100vh - 4rem);
+    overflow: hidden;
+  }
+
+  .admin-review-form-header {
+    padding: 1.75rem 2rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+    background: #ffffff;
+    border-radius: 24px 24px 0 0;
+    flex-shrink: 0;
+  }
+
+  .admin-review-form-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .admin-review-form-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 2rem;
+    min-height: 0;
+  }
+
+  .admin-review-form-footer {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid rgba(226, 232, 240, 0.6);
+    background: #ffffff;
+    flex-shrink: 0;
+    border-radius: 0 0 24px 24px;
+  }
+}
+
+/* Mobile: Modal layout (default, shown on < 1024px) */
+.admin-review-mobile {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .admin-review-mobile {
+    display: none; /* Hide mobile modal on desktop */
+  }
+}
+
 .review-button {
   background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
   color: white;

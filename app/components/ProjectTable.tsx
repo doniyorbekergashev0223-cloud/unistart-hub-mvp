@@ -15,6 +15,20 @@ interface ProjectTableProps {
   showAdminControls?: boolean;
 }
 
+interface ProjectDetail {
+  id: string;
+  title: string;
+  description: string;
+  contact: string;
+  status: string;
+  createdAt: string;
+  owner: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
 const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }) => {
   const { projects, addProject, searchQuery, isSearching } = useProjects();
   const { user } = useAuth();
@@ -28,6 +42,8 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
     comment: '',
   });
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<ProjectDetail | null>(null);
+  const [loadingProject, setLoadingProject] = useState(false);
 
   const handleStatusChange = (projectId: string | number, newStatus: string) => {
     // Simple refresh to show updated data from API
@@ -37,16 +53,45 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
     }, 500);
   };
 
-  const openReviewModal = (projectId: string) => {
+  const openReviewModal = async (projectId: string) => {
     setReviewModal({ isOpen: true, projectId });
     setReviewForm({ status: 'Jarayonda', comment: '' });
-    // Disable body scroll when modal opens
-    document.body.style.overflow = 'hidden';
+    setSelectedProject(null);
+    setLoadingProject(true);
+    
+    // Fetch project details for desktop layout
+    if (user) {
+      try {
+        const response = await fetch(`/api/projects/${projectId}`, {
+          headers: {
+            'x-user-id': user.id,
+            'x-user-role': user.role,
+          },
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.ok && result.data?.project) {
+            setSelectedProject(result.data.project);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load project details:', error);
+      } finally {
+        setLoadingProject(false);
+      }
+    }
+    
+    // Disable body scroll when modal opens (for mobile)
+    if (window.innerWidth < 1024) {
+      document.body.style.overflow = 'hidden';
+    }
   };
 
   const closeReviewModal = () => {
     setReviewModal({ isOpen: false, projectId: null });
     setReviewForm({ status: 'Jarayonda', comment: '' });
+    setSelectedProject(null);
     // Enable body scroll when modal closes
     document.body.style.overflow = '';
   };
@@ -117,16 +162,18 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
 
   return (
     <div className="table-container">
-      <div className="table-header">
-        <h3>Loyihalar ro'yxati</h3>
-        {showAdminControls && user?.role === 'admin' && (
-          <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem' }}>
-            Admin: Statusni o'zgartirish va izoh qoldirish uchun loyihani bosing
-          </p>
-        )}
-      </div>
+      {/* Projects List - Hidden on desktop when review is open */}
+      <div className={`projects-list-container ${reviewModal.isOpen ? 'desktop-hidden' : ''}`}>
+        <div className="table-header">
+          <h3>Loyihalar ro'yxati</h3>
+          {showAdminControls && user?.role === 'admin' && (
+            <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem' }}>
+              Admin: Statusni o'zgartirish va izoh qoldirish uchun loyihani bosing
+            </p>
+          )}
+        </div>
 
-      <div className="projects-list">
+        <div className="projects-list">
         {projects.map((project) => (
             <div key={project.id} className="project-item">
               <div
@@ -168,67 +215,184 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
             <p>{searchQuery ? 'Mos loyiha topilmadi' : "Hali loyihalar yo'q"}</p>
           </div>
         )}
+        </div>
       </div>
 
-      {/* Review Modal */}
+      {/* Review Modal/Page - Desktop: Side-by-side, Mobile: Modal */}
       {reviewModal.isOpen && (
-        <div className="modal-overlay" onClick={closeReviewModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Loyihani ko'rib chiqish</h3>
-              <button onClick={closeReviewModal} className="modal-close" aria-label="Yopish">
-                ×
+        <div className="admin-review-container">
+          {/* Desktop: Side-by-side layout */}
+          <div className="admin-review-desktop">
+            <div className="admin-review-desktop-header">
+              <button onClick={closeReviewModal} className="admin-review-back-button">
+                ← Loyihalar ro'yxatiga qaytish
               </button>
             </div>
+            <div className="admin-review-desktop-content">
+              <div className="admin-review-left">
+                {loadingProject ? (
+                  <div style={{ padding: '2rem', textAlign: 'center' }}>Yuklanmoqda...</div>
+                ) : selectedProject ? (
+                  <div className="admin-review-project-info">
+                    <div className="admin-review-project-header">
+                      <h3>{selectedProject.title}</h3>
+                    </div>
+                    <div className="admin-review-project-details">
+                      <div className="admin-review-detail-row">
+                        <span className="admin-review-label">Holat:</span>
+                        <span className={`status-badge ${getStatusClass(selectedProject.status)}`}>
+                          {selectedProject.status}
+                        </span>
+                      </div>
+                      <div className="admin-review-detail-row">
+                        <span className="admin-review-label">Tavsif:</span>
+                        <span className="admin-review-value">{selectedProject.description}</span>
+                      </div>
+                      <div className="admin-review-detail-row">
+                        <span className="admin-review-label">Aloqa:</span>
+                        <span className="admin-review-value">{selectedProject.contact}</span>
+                      </div>
+                      <div className="admin-review-detail-row">
+                        <span className="admin-review-label">Muallif:</span>
+                        <span className="admin-review-value">
+                          {selectedProject.owner.name} ({selectedProject.owner.email})
+                        </span>
+                      </div>
+                      <div className="admin-review-detail-row">
+                        <span className="admin-review-label">Yaratilgan sana:</span>
+                        <span className="admin-review-value">
+                          {new Date(selectedProject.createdAt).toLocaleDateString('uz-UZ', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '2rem', textAlign: 'center' }}>Loyiha ma'lumotlari yuklanmadi</div>
+                )}
+              </div>
+              <div className="admin-review-right">
+                <div className="admin-review-form-card">
+                  <div className="admin-review-form-header">
+                    <h3>Loyihani ko'rib chiqish</h3>
+                  </div>
+                  <div className="admin-review-form-body">
+                    <form id="review-form" onSubmit={handleReviewSubmit} className="review-form">
+                      <div className="form-group">
+                        <label htmlFor="review-status" className="form-label">
+                          Status *
+                        </label>
+                        <select
+                          id="review-status"
+                          value={reviewForm.status}
+                          onChange={(e) => setReviewForm(prev => ({ ...prev, status: e.target.value }))}
+                          className="form-select"
+                          required
+                        >
+                          <option value="Jarayonda">Jarayonda</option>
+                          <option value="Qabul qilindi">Qabul qilindi</option>
+                          <option value="Rad etildi">Rad etildi</option>
+                        </select>
+                      </div>
 
-            <div className="modal-body">
-              <form id="review-form" onSubmit={handleReviewSubmit} className="review-form">
-                <div className="form-group">
-                  <label htmlFor="review-status" className="form-label">
-                    Status *
-                  </label>
-                  <select
-                    id="review-status"
-                    value={reviewForm.status}
-                    onChange={(e) => setReviewForm(prev => ({ ...prev, status: e.target.value }))}
-                    className="form-select"
-                    required
+                      <div className="form-group">
+                        <label htmlFor="review-comment" className="form-label">
+                          Izoh *
+                        </label>
+                        <textarea
+                          id="review-comment"
+                          value={reviewForm.comment}
+                          onChange={(e) => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
+                          className="form-textarea"
+                          placeholder="Loyiha haqida fikringizni yozing..."
+                          rows={6}
+                          required
+                        />
+                      </div>
+                    </form>
+                  </div>
+                  <div className="admin-review-form-footer">
+                    <button type="button" onClick={closeReviewModal} className="cancel-button">
+                      Bekor qilish
+                    </button>
+                    <button 
+                      type="submit" 
+                      form="review-form"
+                      disabled={submittingReview} 
+                      className="submit-button"
+                    >
+                      {submittingReview ? 'Saqlanmoqda...' : 'Saqlash'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile: Modal overlay */}
+          <div className="admin-review-mobile">
+            <div className="modal-overlay" onClick={closeReviewModal}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3>Loyihani ko'rib chiqish</h3>
+                  <button onClick={closeReviewModal} className="modal-close" aria-label="Yopish">
+                    ×
+                  </button>
+                </div>
+
+                <div className="modal-body">
+                  <form id="review-form-mobile" onSubmit={handleReviewSubmit} className="review-form">
+                    <div className="form-group">
+                      <label htmlFor="review-status-mobile" className="form-label">
+                        Status *
+                      </label>
+                      <select
+                        id="review-status-mobile"
+                        value={reviewForm.status}
+                        onChange={(e) => setReviewForm(prev => ({ ...prev, status: e.target.value }))}
+                        className="form-select"
+                        required
+                      >
+                        <option value="Jarayonda">Jarayonda</option>
+                        <option value="Qabul qilindi">Qabul qilindi</option>
+                        <option value="Rad etildi">Rad etildi</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="review-comment-mobile" className="form-label">
+                        Izoh *
+                      </label>
+                      <textarea
+                        id="review-comment-mobile"
+                        value={reviewForm.comment}
+                        onChange={(e) => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
+                        className="form-textarea"
+                        placeholder="Loyiha haqida fikringizni yozing..."
+                        rows={4}
+                        required
+                      />
+                    </div>
+                  </form>
+                </div>
+
+                <div className="modal-footer">
+                  <button type="button" onClick={closeReviewModal} className="cancel-button">
+                    Bekor qilish
+                  </button>
+                  <button 
+                    type="submit" 
+                    form="review-form-mobile"
+                    disabled={submittingReview} 
+                    className="submit-button"
                   >
-                    <option value="Jarayonda">Jarayonda</option>
-                    <option value="Qabul qilindi">Qabul qilindi</option>
-                    <option value="Rad etildi">Rad etildi</option>
-                  </select>
+                    {submittingReview ? 'Saqlanmoqda...' : 'Saqlash'}
+                  </button>
                 </div>
-
-                <div className="form-group">
-                  <label htmlFor="review-comment" className="form-label">
-                    Izoh *
-                  </label>
-                  <textarea
-                    id="review-comment"
-                    value={reviewForm.comment}
-                    onChange={(e) => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
-                    className="form-textarea"
-                    placeholder="Loyiha haqida fikringizni yozing..."
-                    rows={4}
-                    required
-                  />
-                </div>
-              </form>
-            </div>
-
-            <div className="modal-footer">
-              <button type="button" onClick={closeReviewModal} className="cancel-button">
-                Bekor qilish
-              </button>
-              <button 
-                type="submit" 
-                form="review-form"
-                disabled={submittingReview} 
-                className="submit-button"
-              >
-                {submittingReview ? 'Saqlanmoqda...' : 'Saqlash'}
-              </button>
+              </div>
             </div>
           </div>
         </div>
