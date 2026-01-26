@@ -19,15 +19,24 @@ export async function GET() {
   if (!prisma) {
     // CRITICAL: Return ok: true with zeros - never fail stats API
     // This prevents cascading failures and logout bugs
-    return NextResponse.json({
-      ok: true,
-      data: {
-        usersCount: 0,
-        totalProjects: 0,
-        activeProjects: 0,
-        rejectedProjects: 0,
+    return NextResponse.json(
+      {
+        ok: true,
+        data: {
+          usersCount: 0,
+          totalProjects: 0,
+          activeProjects: 0,
+          rejectedProjects: 0,
+        },
       },
-    })
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    )
   }
 
   try {
@@ -40,15 +49,24 @@ export async function GET() {
         console.error('Database connection failed:', connectError)
       }
       // Return zeros instead of error to prevent dashboard crash
-      return NextResponse.json({
-        ok: true,
-        data: {
-          usersCount: 0,
-          totalProjects: 0,
-          activeProjects: 0,
-          rejectedProjects: 0,
+      return NextResponse.json(
+        {
+          ok: true,
+          data: {
+            usersCount: 0,
+            totalProjects: 0,
+            activeProjects: 0,
+            rejectedProjects: 0,
+          },
         },
-      })
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+        }
+      )
     }
 
     // Get all statistics in parallel for better performance
@@ -96,29 +114,48 @@ export async function GET() {
       }),
     ])
 
-    return NextResponse.json({
-      ok: true,
-      data: {
-        usersCount,
-        totalProjects,
-        activeProjects,
-        rejectedProjects,
+    // Fixed: Add cache control headers to prevent inconsistent data on refresh
+    return NextResponse.json(
+      {
+        ok: true,
+        data: {
+          usersCount,
+          totalProjects,
+          activeProjects,
+          rejectedProjects,
+        },
       },
-    })
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    )
   } catch (error: any) {
     if (process.env.NODE_ENV === 'development') {
       console.error('Dashboard stats error:', error)
       console.error('Error details:', error?.message || String(error))
     }
     // Return zeros instead of error to prevent dashboard crash
-    return NextResponse.json({
-      ok: true,
-      data: {
-        usersCount: 0,
-        totalProjects: 0,
-        activeProjects: 0,
-        rejectedProjects: 0,
+    return NextResponse.json(
+      {
+        ok: true,
+        data: {
+          usersCount: 0,
+          totalProjects: 0,
+          activeProjects: 0,
+          rejectedProjects: 0,
+        },
       },
-    })
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    )
   }
 }

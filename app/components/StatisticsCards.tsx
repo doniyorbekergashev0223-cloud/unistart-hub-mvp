@@ -16,22 +16,32 @@ const StatisticsCards = () => {
 
   useEffect(() => {
     let isMounted = true;
+    let abortController: AbortController | null = null;
     
     const fetchStats = async () => {
+      // Fixed: Cancel previous request if component re-renders
+      if (abortController) {
+        abortController.abort();
+      }
+      abortController = new AbortController();
+      
       setLoading(true);
       setError(null);
       
       try {
         const response = await fetch('/api/dashboard/stats', {
           cache: 'no-store', // Prevent caching
+          signal: abortController.signal, // Fixed: Add abort signal to prevent race conditions
           headers: {
-            'Cache-Control': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
           },
         });
         
         const result = await response.json().catch(() => null);
 
-        if (!isMounted) return;
+        if (!isMounted || abortController.signal.aborted) return;
 
         if (!response.ok || !result || !result.ok) {
           throw new Error(result?.error?.message || 'Statistika yuklanmadi');
@@ -43,8 +53,11 @@ const StatisticsCards = () => {
         } else {
           throw new Error('Statistika ma\'lumotlari topilmadi');
         }
-      } catch (err) {
-        if (!isMounted) return;
+      } catch (err: any) {
+        if (!isMounted || abortController.signal.aborted) return;
+        
+        // Ignore abort errors
+        if (err.name === 'AbortError') return;
         
         console.error('Failed to fetch dashboard stats:', err);
         setError('Statistika yuklanmadi');
@@ -56,7 +69,7 @@ const StatisticsCards = () => {
           rejectedProjects: 0,
         });
       } finally {
-        if (isMounted) {
+        if (isMounted && !abortController.signal.aborted) {
           setLoading(false);
         }
       }
@@ -66,6 +79,9 @@ const StatisticsCards = () => {
     
     return () => {
       isMounted = false;
+      if (abortController) {
+        abortController.abort();
+      }
     };
   }, []);
 

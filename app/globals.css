@@ -1163,9 +1163,9 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(0, 0, 0, 0.3); /* Fixed: Reduced opacity from 0.6 to 0.3 for better background visibility */
+  backdrop-filter: blur(8px); /* Fixed: Reduced blur from 20px to 8px */
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4833,9 +4833,9 @@ body {
     padding: 1rem !important;
     align-items: center !important; /* Markazda */
     justify-content: center !important;
-    background: rgba(0, 0, 0, 0.6) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
+    background: rgba(0, 0, 0, 0.3) !important; /* Fixed: Reduced opacity for better background visibility */
+    backdrop-filter: blur(8px) !important; /* Fixed: Reduced blur */
+    -webkit-backdrop-filter: blur(8px) !important;
   }
 
   .modal-content {
