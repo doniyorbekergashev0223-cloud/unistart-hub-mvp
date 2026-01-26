@@ -285,12 +285,28 @@ const Topbar = () => {
           </button>
 
           {showNotifications && (
-            <div className="notification-dropdown">
-              <div className="notification-header">
-                <h4>Bildirishnomalar</h4>
-                {loadingNotifications && <span className="loading-text">Yuklanmoqda...</span>}
-              </div>
-              <div className="notification-list">
+            <>
+              <div 
+                className="dropdown-backdrop" 
+                onClick={() => {
+                  setShowNotifications(false);
+                }}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  zIndex: 10000,
+                }}
+              />
+              <div className="notification-dropdown">
+                <div className="notification-header">
+                  <h4>Bildirishnomalar</h4>
+                  {loadingNotifications && <span className="loading-text">Yuklanmoqda...</span>}
+                </div>
+                <div className="notification-list">
                 {notifications.length === 0 ? (
                   <div className="notification-empty">
                     Bildirishnomalar yo'q
@@ -318,8 +334,9 @@ const Topbar = () => {
                     </div>
                   ))
                 )}
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
@@ -377,8 +394,24 @@ const Topbar = () => {
           </button>
 
           {showDropdown && (
-            <div className="profile-dropdown">
-              {dropdownItems.map((item, index) => (
+            <>
+              <div 
+                className="dropdown-backdrop" 
+                onClick={() => {
+                  setShowDropdown(false);
+                }}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  zIndex: 9999,
+                }}
+              />
+              <div className="profile-dropdown">
+                {dropdownItems.map((item, index) => (
                 item.type === 'action' ? (
                   <button
                     key={index}
@@ -426,7 +459,8 @@ const Topbar = () => {
                   </div>
                 )
               ))}
-            </div>
+              </div>
+            </>
           )}
         </div>
       </div>
