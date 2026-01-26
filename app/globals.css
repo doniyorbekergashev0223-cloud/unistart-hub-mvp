@@ -5247,13 +5247,19 @@ body {
 
   /* Admin Review Mobile - Fix layout issues (ADMIN PANEL ONLY) */
   .admin-review-container {
-    position: relative !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-    box-sizing: border-box;
-    z-index: 1000000 !important; /* Fixed: Highest z-index to bring admin review to front */
+    position: fixed !important; /* Fixed: Fixed positioning to bring to front */
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    z-index: 999999 !important; /* Fixed: Maximum z-index to bring admin review to front */
     isolation: isolate !important; /* Create new stacking context */
+    pointer-events: auto !important; /* Ensure it can receive clicks */
   }
 
   .admin-review-mobile {
@@ -5267,8 +5273,9 @@ body {
     z-index: 1000000 !important; /* Fixed: Highest z-index for mobile */
     display: flex !important;
     flex-direction: column !important;
-    overflow: hidden !important;
+    overflow: visible !important; /* Fixed: Allow content to be visible */
     isolation: isolate !important; /* Create new stacking context */
+    pointer-events: auto !important;
   }
 
   .admin-review-mobile .modal-overlay {
@@ -5285,7 +5292,8 @@ body {
     justify-content: center !important;
     padding: 1rem !important;
     box-sizing: border-box !important;
-    overflow: hidden !important;
+    overflow: visible !important; /* Fixed: Allow modal content to be visible */
+    pointer-events: auto !important;
   }
 
   .admin-review-mobile .modal-content {
@@ -5296,14 +5304,17 @@ body {
     margin: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    overflow: hidden !important;
+    overflow: hidden !important; /* Only content area scrolls */
     box-sizing: border-box !important;
     z-index: 1000002 !important; /* Fixed: Highest for content */
+    pointer-events: auto !important;
   }
 
   .admin-review-mobile .modal-header {
     flex-shrink: 0 !important;
     position: relative !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .admin-review-mobile .modal-body {
@@ -5311,11 +5322,36 @@ body {
     overflow-y: auto !important;
     overflow-x: hidden !important;
     min-height: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
     -webkit-overflow-scrolling: touch !important;
   }
 
   .admin-review-mobile .modal-footer {
     flex-shrink: 0 !important;
     position: relative !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Ensure form elements are visible and properly sized */
+  .admin-review-mobile .review-form {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-review-mobile .form-group {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-review-mobile .form-select,
+  .admin-review-mobile .form-textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 }
