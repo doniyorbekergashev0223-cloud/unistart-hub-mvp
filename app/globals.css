@@ -1422,6 +1422,8 @@ body {
 .admin-review-container {
   position: relative;
   width: 100%;
+  z-index: 10000 !important; /* Fixed: Bring admin review to front */
+  isolation: isolate; /* Create new stacking context */
 }
 
 /* Hide projects list on desktop when review is open */
@@ -1441,10 +1443,11 @@ body {
     display: flex;
     flex-direction: column;
     gap: 2rem;
-    position: static; /* Fixed: Normal page flow, not fixed overlay */
-    z-index: 1;
+    position: relative; /* Fixed: Relative positioning for proper stacking */
+    z-index: 10001 !important; /* Fixed: Higher z-index to appear in front */
     padding: 0;
     width: 100%;
+    isolation: isolate; /* Create new stacking context */
   }
 
   .admin-review-desktop-header {
@@ -1622,6 +1625,9 @@ body {
 /* Mobile: Modal layout (default, shown on < 1024px) */
 .admin-review-mobile {
   display: block;
+  position: relative;
+  z-index: 10000 !important; /* Fixed: Bring mobile modal to front */
+  isolation: isolate; /* Create new stacking context */
 }
 
 @media (min-width: 1024px) {
@@ -5246,7 +5252,8 @@ body {
     max-width: 100% !important;
     overflow-x: hidden !important;
     box-sizing: border-box;
-    z-index: 999999 !important; /* Ensure it's above everything */
+    z-index: 1000000 !important; /* Fixed: Highest z-index to bring admin review to front */
+    isolation: isolate !important; /* Create new stacking context */
   }
 
   .admin-review-mobile {
@@ -5257,10 +5264,11 @@ body {
     bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    z-index: 999999 !important;
+    z-index: 1000000 !important; /* Fixed: Highest z-index for mobile */
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
+    isolation: isolate !important; /* Create new stacking context */
   }
 
   .admin-review-mobile .modal-overlay {
@@ -5271,7 +5279,7 @@ body {
     bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    z-index: 999999 !important;
+    z-index: 1000001 !important; /* Fixed: Even higher for overlay */
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -5290,6 +5298,7 @@ body {
     flex-direction: column !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
+    z-index: 1000002 !important; /* Fixed: Highest for content */
   }
 
   .admin-review-mobile .modal-header {
