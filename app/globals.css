@@ -1161,13 +1161,17 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease;
+  z-index: 10000;
+  animation: fadeIn 0.25s ease;
+  padding: 1rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes fadeIn {
@@ -1180,17 +1184,22 @@ body {
 }
 
 .modal-content {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.99) 0%, rgba(255, 255, 255, 0.97) 100%);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-radius: 28px;
   padding: 0;
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 540px;
+  width: 100%;
+  max-height: calc(100vh - 2rem);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  margin: auto;
 }
 
 @keyframes slideUp {
@@ -1205,49 +1214,77 @@ body {
 }
 
 .modal-header {
-  padding: 2rem 2.5rem;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.3);
+  padding: 2rem 2.5rem 1.75rem;
+  border-bottom: 2px solid rgba(226, 232, 240, 0.4);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.5);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border-radius: 28px 28px 0 0;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: #0f172a;
+  letter-spacing: -0.02em;
 }
 
 .modal-close {
-  background: none;
+  background: rgba(241, 245, 249, 0.8);
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   color: #64748b;
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
   transition: all 0.2s ease;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-weight: 300;
 }
 
 .modal-close:hover {
-  background: #f1f5f9;
-  color: #334155;
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  transform: scale(1.1);
+}
+
+.modal-close:active {
+  transform: scale(0.95);
 }
 
 .review-form {
-  padding: 2.5rem;
+  padding: 2rem 2.5rem;
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .modal-actions {
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
-  padding: 2rem 2.5rem;
-  border-top: 1px solid rgba(226, 232, 240, 0.3);
-  background: rgba(248, 250, 252, 0.5);
+  padding: 1.75rem 2.5rem 2rem;
+  border-top: 2px solid rgba(226, 232, 240, 0.4);
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%);
   backdrop-filter: blur(10px);
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  border-radius: 0 0 28px 28px;
 }
 
 .cancel-button {
@@ -4616,5 +4653,111 @@ body {
 
   h2 {
     font-size: 1.25rem;
+  }
+
+  /* Modal - Mobil uchun (Professional) */
+  .modal-overlay {
+    padding: 0.5rem !important;
+    align-items: flex-end !important; /* Pastga ko'chirish */
+    justify-content: center !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+  }
+
+  .modal-content {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 85vh !important;
+    border-radius: 28px 28px 0 0 !important; /* Pastdan yumaloq */
+    margin: 0 !important;
+    animation: slideUpMobileModal 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  @keyframes slideUpMobileModal {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .modal-header {
+    padding: 1.5rem 1.5rem 1.25rem !important;
+    border-radius: 28px 28px 0 0 !important;
+  }
+
+  .modal-header h3 {
+    font-size: 1.25rem !important;
+  }
+
+  .modal-close {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    font-size: 1.5rem !important;
+    padding: 0 !important;
+  }
+
+  .review-form {
+    padding: 1.5rem 1.5rem !important;
+    gap: 1.25rem !important;
+  }
+
+  .review-form .form-group {
+    margin-bottom: 0 !important;
+  }
+
+  .review-form .form-label {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 0.75rem !important;
+    color: #374151 !important;
+  }
+
+  .review-form .form-select {
+    width: 100% !important;
+    padding: 1rem !important;
+    font-size: 16px !important; /* iOS zoom fix */
+    border-radius: 14px !important;
+    border: 2px solid rgba(226, 232, 240, 0.8) !important;
+    background: #ffffff !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+  }
+
+  .review-form .form-textarea {
+    width: 100% !important;
+    min-height: 120px !important;
+    padding: 1rem !important;
+    font-size: 16px !important; /* iOS zoom fix */
+    border-radius: 14px !important;
+    border: 2px solid rgba(226, 232, 240, 0.8) !important;
+    resize: vertical !important;
+  }
+
+  .modal-actions {
+    padding: 1.5rem !important;
+    flex-direction: column-reverse !important; /* Mobile'da pastdan yuqoriga */
+    gap: 0.75rem !important;
+  }
+
+  .modal-actions .cancel-button,
+  .modal-actions .submit-button {
+    width: 100% !important;
+    padding: 1.125rem !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    border-radius: 14px !important;
+    min-height: 52px !important;
+    touch-action: manipulation !important;
+  }
+
+  .modal-actions .submit-button {
+    order: -1 !important; /* Submit button birinchi (yuqorida) */
   }
 }

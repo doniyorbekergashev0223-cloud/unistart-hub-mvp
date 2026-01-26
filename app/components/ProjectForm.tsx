@@ -62,6 +62,19 @@ const ProjectForm = () => {
     setIsSubmitting(true);
 
     try {
+      // Debug: Console'da user ma'lumotlarini ko'rsatish
+      console.log('🔍 Project Submission Debug:');
+      console.log('User:', user);
+      console.log('User ID:', user?.id);
+      console.log('User Role:', user?.role);
+      
+      if (!user?.id || !user?.role) {
+        alert('Foydalanuvchi ma\'lumotlari topilmadi. Iltimos, qayta tizimga kiring.');
+        router.push('/auth/login');
+        setIsSubmitting(false);
+        return;
+      }
+
       // Create FormData for file upload
       const formDataToSend = new FormData();
       formDataToSend.append('title', formData.projectName.trim());
@@ -73,19 +86,43 @@ const ProjectForm = () => {
         formDataToSend.append('file', selectedFile);
       }
 
+      // Prepare headers
+      const headers: Record<string, string> = {
+        'x-user-id': user.id,
+        'x-user-role': user.role,
+      };
+
+      // Debug: Console'da headerlarni ko'rsatish
+      console.log('📤 Request Headers:', headers);
+
       // Submit to API with authentication headers
       const response = await fetch('/api/projects', {
         method: 'POST',
-        headers: {
-          'x-user-id': user.id,
-          'x-user-role': user.role,
-        },
+        headers: headers,
         body: formDataToSend,
       });
 
+      // Debug: Response'ni ko'rsatish
+      console.log('📥 Response Status:', response.status);
+      console.log('📥 Response OK:', response.ok);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || 'Loyiha yuborishda xatolik yuz berdi');
+        const errorMessage = errorData.error?.message || 'Loyiha yuborishda xatolik yuz berdi';
+        
+        // Show more specific error messages
+        if (errorData.error?.code === 'DATABASE_CONNECTION_LIMIT' || 
+            errorData.error?.code === 'DATABASE_TENANT_ERROR') {
+          alert(`Xatolik: ${errorMessage}\n\nIltimos, Vercel logs'ni tekshiring va CRITICAL_DATABASE_FIX.md faylini ko'ring.`);
+        } else if (errorData.error?.code === 'UNAUTHORIZED') {
+          alert('Kirish talab qilinadi. Iltimos, qayta tizimga kiring.');
+          router.push('/auth/login');
+          return;
+        } else {
+          alert(`Xatolik: ${errorMessage}`);
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();

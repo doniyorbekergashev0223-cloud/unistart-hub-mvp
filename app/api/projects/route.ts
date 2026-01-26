@@ -121,60 +121,143 @@ export async function POST(req: Request) {
 
   const userIdToUse = actor.userId
 
-  // Ensure user exists (security + data integrity)
-  const userExists = await prisma.user.findUnique({
-    where: { id: userIdToUse },
-    select: { id: true },
-  })
-  if (!userExists) {
-    return jsonError(401, 'UNAUTHORIZED', 'Foydalanuvchi topilmadi.')
-  }
-
-  let fileUrl: string | undefined
-
-  // Upload file to Supabase if provided
-  if (file && file.size > 0) {
+  try {
+    // Ensure user exists (security + data integrity)
+    let userExists
     try {
-      fileUrl = await uploadProjectFile(file, userIdToUse)
-    } catch (uploadError) {
-      console.error('File upload error:', uploadError)
-      // Continue without file - don't fail the entire submission
+      userExists = await prisma.user.findUnique({
+        where: { id: userIdToUse },
+        select: { id: true },
+      })
+    } catch (dbError: any) {
+      console.error('Database query error in projects POST (find user):', dbError)
+      console.error('Error type:', dbError?.constructor?.name)
+      console.error('Error code:', dbError?.code)
+      
+      // Check for connection limit errors
+      if (dbError?.message?.includes('MaxClientsInSessionMode') || 
+          dbError?.message?.includes('max clients reached')) {
+        return jsonError(
+          503,
+          'DATABASE_CONNECTION_LIMIT',
+          "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+        )
+      }
+      
+      // Check for "Tenant or user not found" error
+      if (dbError?.message?.includes('Tenant or user not found') ||
+          dbError?.message?.includes('tenant or user not found')) {
+        return jsonError(
+          503,
+          'DATABASE_TENANT_ERROR',
+          "Ma'lumotlar bazasi username formati noto'g'ri. Supabase uchun username 'postgres.PROJECT-REF' formatida bo'lishi kerak. TENANT_USER_FIX.md faylini ko'ring."
+        )
+      }
+      
+      throw dbError
     }
-  }
 
-  const created = await prisma.project.create({
-    data: {
-      title,
-      description,
-      contact,
-      status: STATUS_TO_ENUM.Jarayonda as any,
-      userId: userIdToUse,
-      fileUrl,
-    },
-    include: {
-      user: {
-        select: { id: true, name: true, email: true, role: true },
-      },
-    },
-  })
+    if (!userExists) {
+      return jsonError(401, 'UNAUTHORIZED', 'Foydalanuvchi topilmadi.')
+    }
 
-  return NextResponse.json(
-    {
-      ok: true,
-      data: {
-        project: {
-          id: created.id,
-          title: created.title,
-          description: created.description,
-          contact: created.contact,
-          status: ENUM_TO_STATUS[String(created.status)] ?? 'Jarayonda',
-          createdAt: created.createdAt,
-          user: created.user,
-          fileUrl: created.fileUrl,
+    let fileUrl: string | undefined
+
+    // Upload file to Supabase if provided
+    if (file && file.size > 0) {
+      try {
+        fileUrl = await uploadProjectFile(file, userIdToUse)
+      } catch (uploadError: any) {
+        console.error('File upload error:', uploadError)
+        // Continue without file - don't fail the entire submission
+        // But log the error for debugging
+        if (uploadError?.message?.includes('Bucket not found')) {
+          console.error('⚠️ Supabase Storage bucket "project-files" topilmadi. SUPABASE_STORAGE_SETUP.md faylini ko\'ring.')
+        }
+      }
+    }
+
+    // Create project
+    let created
+    try {
+      created = await prisma.project.create({
+        data: {
+          title,
+          description,
+          contact,
+          status: STATUS_TO_ENUM.Jarayonda as any,
+          userId: userIdToUse,
+          fileUrl,
+        },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true, role: true },
+          },
+        },
+      })
+    } catch (dbError: any) {
+      console.error('Database query error in projects POST (create project):', dbError)
+      console.error('Error type:', dbError?.constructor?.name)
+      console.error('Error code:', dbError?.code)
+      
+      // Check for connection limit errors
+      if (dbError?.message?.includes('MaxClientsInSessionMode') || 
+          dbError?.message?.includes('max clients reached')) {
+        return jsonError(
+          503,
+          'DATABASE_CONNECTION_LIMIT',
+          "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+        )
+      }
+      
+      // Check for "Tenant or user not found" error
+      if (dbError?.message?.includes('Tenant or user not found') ||
+          dbError?.message?.includes('tenant or user not found')) {
+        return jsonError(
+          503,
+          'DATABASE_TENANT_ERROR',
+          "Ma'lumotlar bazasi username formati noto'g'ri. Supabase uchun username 'postgres.PROJECT-REF' formatida bo'lishi kerak. TENANT_USER_FIX.md faylini ko'ring."
+        )
+      }
+      
+      return jsonError(500, 'DATABASE_ERROR', "Ma'lumotlar bazasi bilan bog'lanishda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.")
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        data: {
+          project: {
+            id: created.id,
+            title: created.title,
+            description: created.description,
+            contact: created.contact,
+            status: ENUM_TO_STATUS[String(created.status)] ?? 'Jarayonda',
+            createdAt: created.createdAt,
+            user: created.user,
+            fileUrl: created.fileUrl,
+          },
         },
       },
-    },
-    { status: 201 }
-  )
+      { status: 201 }
+    )
+  } catch (error: any) {
+    console.error('Project creation error:', error)
+    console.error('Error type:', error?.constructor?.name)
+    console.error('Error code:', error?.code)
+    console.error('Error message:', error?.message)
+    
+    // Check for connection limit errors
+    if (error?.message?.includes('MaxClientsInSessionMode') || 
+        error?.message?.includes('max clients reached')) {
+      return jsonError(
+        503,
+        'DATABASE_CONNECTION_LIMIT',
+        "Ma'lumotlar bazasi ulanish limitiga yetildi. Iltimos, Vercel'da DATABASE_URL ni Direct Connection (port 5432) ga o'zgartiring. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+      )
+    }
+    
+    return jsonError(500, 'INTERNAL_ERROR', 'Loyiha yuborishda xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.')
+  }
 }
 
