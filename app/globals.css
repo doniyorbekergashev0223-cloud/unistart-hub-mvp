@@ -4222,14 +4222,91 @@ body {
     padding: 1.5rem;
   }
 
-  /* Project Table - Mobil uchun */
+  /* Project Table - Mobil uchun (ADMIN PANEL FIX) */
   .table-container {
-    overflow-x: visible; /* Fixed: Prevent horizontal scroll, allow content visibility */
+    overflow-x: hidden !important; /* Fixed: Prevent horizontal overflow on mobile */
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     border-radius: 16px;
-    margin: 0 -1rem;
-    padding: 0 1rem;
+    margin: 0;
+    padding: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* Projects List Container - Mobile fix (ADMIN PANEL) */
+  .projects-list-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Projects List - Mobile fix (ADMIN PANEL) */
+  .projects-list {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Project Item - Mobile fix (ADMIN PANEL) */
+  .project-item {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    overflow: hidden;
+    margin: 0;
+  }
+
+  .project-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 1.25rem 1rem !important;
+    gap: 1rem;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .project-info {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .project-name {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+  }
+
+  .project-status {
+    width: 100% !important;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    box-sizing: border-box;
+  }
+
+  .project-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .review-button {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-top: 0.5rem;
   }
 
   .project-table {
@@ -5160,5 +5237,76 @@ body {
     border-radius: 12px !important;
     min-height: 48px !important;
     touch-action: manipulation !important;
+  }
+
+  /* Admin Review Mobile - Fix layout issues (ADMIN PANEL ONLY) */
+  .admin-review-container {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box;
+    z-index: 999999 !important; /* Ensure it's above everything */
+  }
+
+  .admin-review-mobile {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .admin-review-mobile .modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 1rem !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .admin-review-mobile .modal-content {
+    position: relative !important;
+    width: 100% !important;
+    max-width: calc(100vw - 2rem) !important;
+    max-height: 90vh !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-review-mobile .modal-header {
+    flex-shrink: 0 !important;
+    position: relative !important;
+  }
+
+  .admin-review-mobile .modal-body {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    min-height: 0 !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .admin-review-mobile .modal-footer {
+    flex-shrink: 0 !important;
+    position: relative !important;
   }
 }
