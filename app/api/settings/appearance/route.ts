@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getPrisma } from '@/lib/db';
+import { prisma } from '@/lib/db';
 
 export const runtime = 'nodejs';
 
@@ -12,7 +12,6 @@ function jsonError(status: number, code: string, message: string, details?: unkn
 
 // Get theme preference
 export async function GET(req: Request) {
-  const prisma = getPrisma();
   if (!prisma) {
     return jsonError(503, 'DATABASE_NOT_CONFIGURED', "Ma'lumotlar bazasi sozlanmagan.");
   }
@@ -37,7 +36,6 @@ export async function GET(req: Request) {
 
 // Update theme preference
 export async function PATCH(req: Request) {
-  const prisma = getPrisma();
   if (!prisma) {
     return jsonError(503, 'DATABASE_NOT_CONFIGURED', "Ma'lumotlar bazasi sozlanmagan.");
   }

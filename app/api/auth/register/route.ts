@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPrisma } from '@/lib/db'
+import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/security'
 
 export const runtime = 'nodejs'
@@ -18,7 +18,6 @@ function isRole(value: unknown): value is Role {
 }
 
 export async function POST(req: Request) {
-  const prisma = getPrisma()
   if (!prisma) {
     return jsonError(
       503,

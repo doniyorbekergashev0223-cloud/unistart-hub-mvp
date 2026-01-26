@@ -12,7 +12,6 @@ function jsonError(status: number, code: string, message: string, details?: unkn
 
 // Get audit log
 export async function GET(req: Request) {
-  const prisma = getPrisma();
   if (!prisma) {
     return jsonError(503, 'DATABASE_NOT_CONFIGURED', "Ma'lumotlar bazasi sozlanmagan.");
   }

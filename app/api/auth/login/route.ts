@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPrisma } from '@/lib/db'
+import { prisma } from '@/lib/db'
 import { verifyPassword } from '@/lib/security'
 
 export const runtime = 'nodejs'
@@ -13,7 +13,6 @@ function jsonError(status: number, code: string, message: string, details?: unkn
 
 export async function POST(req: Request) {
   try {
-    const prisma = getPrisma()
     if (!prisma) {
       return jsonError(
         503,

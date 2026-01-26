@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPrisma } from '@/lib/db'
+import { prisma } from '@/lib/db'
 
 export const runtime = 'nodejs'
 // Prevent static generation - this route must be dynamic
@@ -16,7 +16,6 @@ export async function GET() {
   // CRITICAL: This route must be dynamic - never run during build
   // Stats are fetched at runtime only
 
-  const prisma = getPrisma()
   if (!prisma) {
     // CRITICAL: Return ok: true with zeros - never fail stats API
     // This prevents cascading failures and logout bugs

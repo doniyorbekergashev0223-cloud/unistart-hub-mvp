@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPrisma } from '@/lib/db'
+import { prisma } from '@/lib/db'
 
 export const runtime = 'nodejs'
 
@@ -15,7 +15,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 })
   }
 
-  const prisma = getPrisma()
   if (!prisma) {
     return NextResponse.json({ ok: false, error: { code: 'DATABASE_ERROR', message: "Ma'lumotlar bazasi sozlanmagan." } }, { status: 503 })
   }

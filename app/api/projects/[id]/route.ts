@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPrisma } from '@/lib/db'
+import { prisma } from '@/lib/db'
 
 export const runtime = 'nodejs'
 
@@ -39,7 +39,6 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const prisma = getPrisma()
   if (!prisma) {
     return jsonError(
       503,

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPrisma } from '@/lib/db'
+import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/security'
 import { hashToken, verifyToken } from '@/lib/tokens'
 
@@ -31,7 +31,6 @@ function jsonError(status: number, code: string, message: string, details?: unkn
  * - New password is hashed with bcrypt before storage
  */
 export async function POST(req: Request) {
-  const prisma = getPrisma()
   if (!prisma) {
     return jsonError(
       503,

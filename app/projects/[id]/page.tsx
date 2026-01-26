@@ -178,17 +178,22 @@ export default function ProjectDetailPage() {
 
             {error && (
               <div style={{ textAlign: 'center', padding: '2rem', color: '#ef4444' }}>
-                <p>{error}</p>
+                <p style={{ marginBottom: '1rem', fontSize: '1rem' }}>
+                  {error.includes('Ruxsat yo\'q') || error.includes('FORBIDDEN') 
+                    ? 'Sizda bu loyihani ko\'rish uchun ruxsat yo\'q. Faqat o\'z loyihalaringizni ko\'rishingiz mumkin.'
+                    : error}
+                </p>
                 <button
                   onClick={() => router.push('/projects')}
                   style={{
                     marginTop: '1rem',
-                    padding: '0.5rem 1rem',
+                    padding: '0.75rem 1.5rem',
                     background: '#f97316',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     cursor: 'pointer',
+                    fontWeight: 500,
                   }}
                 >
                   Loyihalar ro'yxatiga qaytish

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPrisma } from '@/lib/db'
+import { prisma } from '@/lib/db'
 import { uploadProjectFile } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
@@ -40,7 +40,6 @@ function getActor(req: Request): { userId: string; role: Role } | null {
 }
 
 export async function GET(req: Request) {
-  const prisma = getPrisma()
   if (!prisma) {
     return jsonError(
       503,
@@ -116,7 +115,6 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const prisma = getPrisma()
   if (!prisma) {
     return jsonError(
       503,

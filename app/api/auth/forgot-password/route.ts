@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPrisma } from '@/lib/db'
+import { prisma } from '@/lib/db'
 import { generateResetCode, hashToken } from '@/lib/tokens'
 import { sendPasswordResetCode } from '@/lib/email'
 
@@ -29,7 +29,6 @@ function jsonError(status: number, code: string, message: string, details?: unkn
  * - Old unused codes are invalidated
  */
 export async function POST(req: Request) {
-  const prisma = getPrisma()
   if (!prisma) {
     return jsonError(
       503,
