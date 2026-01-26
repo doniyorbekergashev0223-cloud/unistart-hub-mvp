@@ -1166,18 +1166,18 @@ body {
 
 /* Modal Styles */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
   background: rgba(0, 0, 0, 0.3); /* Fixed: Reduced opacity from 0.6 to 0.3 for better background visibility */
   backdrop-filter: blur(8px); /* Fixed: Reduced blur from 20px to 8px */
   -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 99999; /* Fixed: Very high z-index to ensure modal is always on top of all layout elements */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 999999 !important; /* Fixed: Maximum z-index to ensure modal is always on top */
   animation: fadeIn 0.3s ease;
   padding: 1rem;
   overflow: hidden; /* Prevent background scroll */
@@ -1194,22 +1194,22 @@ body {
 }
 
 .modal-content {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.99) 0%, rgba(255, 255, 255, 0.97) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.99) 0%, rgba(255, 255, 255, 0.97) 100%) !important;
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   border-radius: 24px;
   padding: 0;
   max-width: 750px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 90vh !important;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.8);
   animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  z-index: 1; /* Relative to overlay, which is already at root level */
+  position: relative !important;
+  z-index: 1000000 !important; /* Fixed: Maximum z-index to ensure content is above overlay */
   margin: 0 auto; /* Center horizontally */
 }
 
@@ -1282,7 +1282,9 @@ body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   min-height: 0;
-  max-height: none; /* Let flex handle height, constrained by parent max-height */
+  max-height: calc(90vh - 200px); /* Fixed: Reserve space for header (~80px) + footer (~120px) to ensure scroll works */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
 .review-form {
@@ -4886,7 +4888,9 @@ body {
     overflow-y: auto !important;
     overflow-x: hidden !important;
     min-height: 0 !important;
-    max-height: none !important; /* Let flex handle height */
+    max-height: calc(90vh - 200px) !important; /* Fixed: Reserve space for header + footer to ensure scroll works */
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent !important;
   }
 
   .review-form {
