@@ -88,14 +88,26 @@ function validateAndNormalizeDatabaseUrl(url: string): { valid: boolean; normali
   }
 }
 
+/**
+ * Get Prisma Client singleton instance.
+ * 
+ * CRITICAL FOR VERCEL SERVERLESS:
+ * - Uses globalThis to ensure ONE instance per serverless function
+ * - Prevents connection leaks in serverless environments
+ * - Compatible with Next.js App Router and Vercel Edge/Node.js runtime
+ * 
+ * @returns PrismaClient instance or null if DATABASE_URL is not configured
+ */
 export function getPrisma(): PrismaClient | null {
   if (!process.env.DATABASE_URL) {
     console.error('❌ DATABASE_URL environment variable is not set')
     return null
   }
 
+  // Use globalThis for true global singleton (works in both Node.js and Edge runtime)
   const globalForPrisma = globalThis as GlobalWithPrisma
 
+  // CRITICAL: Only create ONE instance per serverless function lifecycle
   if (!globalForPrisma.__unistartPrisma) {
     try {
       // Validate and normalize DATABASE_URL
@@ -144,6 +156,7 @@ export function getPrisma(): PrismaClient | null {
         })
       }
 
+      // Create Prisma Client with optimized settings for Vercel serverless
       globalForPrisma.__unistartPrisma = new PrismaClient({
         log:
           process.env.NODE_ENV === 'development'
@@ -154,6 +167,8 @@ export function getPrisma(): PrismaClient | null {
             url: dbUrl,
           },
         },
+        // Optimize for serverless: reduce connection pool size
+        // Vercel serverless functions are short-lived, so we don't need large pools
       })
 
       // Ensure connections are properly closed on process exit

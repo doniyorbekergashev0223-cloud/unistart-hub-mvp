@@ -103,8 +103,18 @@ export async function sendPasswordResetCode(
     return false
   }
 
-  const appUrl = process.env.APP_URL || 'http://localhost:3000'
-  const resetUrl = `${appUrl}/auth/reset-password?token=${code}&email=${encodeURIComponent(email)}`
+  // Get APP_URL from environment, with fallback for development
+  // CRITICAL: APP_URL must be set in Vercel for production password reset links
+  const appUrl = process.env.APP_URL?.trim() || process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}` 
+    : 'http://localhost:3000'
+  
+  if (!process.env.APP_URL && process.env.NODE_ENV === 'production') {
+    console.warn('⚠️ WARNING: APP_URL not set in production. Password reset links may not work correctly.')
+    console.warn('⚠️ Set APP_URL in Vercel environment variables to your production domain (e.g., https://yourdomain.com)')
+  }
+  
+  const resetUrl = `${appUrl}/auth/reset-password?code=${code}&email=${encodeURIComponent(email)}`
 
   const mailOptions = {
     from: `"UniStart Hub" <${process.env.SMTP_USER}>`,
@@ -165,36 +175,35 @@ Agar siz bu so'rovni qilmagan bo'lsangiz, bu xatni e'tiborsiz qoldiring.
   }
 
   try {
-    console.log('Attempting to verify SMTP connection...')
-    // Verify connection before sending
+    // Verify connection before sending (only log in development)
     await transporter.verify()
-    console.log('✅ SMTP connection verified successfully')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ SMTP connection verified successfully')
+    }
     
-    console.log('Attempting to send email...')
     // Send email
     const info = await transporter.sendMail(mailOptions)
-    console.log(`✅ Password reset code sent to ${email}`, {
-      messageId: info.messageId,
-      response: info.response,
-      accepted: info.accepted,
-      rejected: info.rejected,
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`✅ Password reset code sent to ${email}`, {
+        messageId: info.messageId,
+        accepted: info.accepted,
+        rejected: info.rejected,
+      })
+    }
     return true
   } catch (error: any) {
-    // Detailed error logging for debugging
-    console.error('❌ Failed to send password reset email:', {
-      error: error.message,
-      code: error.code,
-      command: error.command,
-      response: error.response,
-      responseCode: error.responseCode,
-      errno: error.errno,
-      syscall: error.syscall,
-      hostname: error.hostname,
-      port: error.port,
-      address: error.address,
-      stack: error.stack,
-    })
+    // Detailed error logging (always log errors, but less verbose in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Failed to send password reset email:', {
+        error: error.message,
+        code: error.code,
+        response: error.response,
+        responseCode: error.responseCode,
+      })
+    } else {
+      // Production: log minimal error info
+      console.error('❌ Failed to send password reset email:', error.code || error.message)
+    }
 
     // Common error messages and solutions
     if (error.code === 'EAUTH') {

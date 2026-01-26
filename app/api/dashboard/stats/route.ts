@@ -13,9 +13,8 @@ function jsonError(status: number, code: string, message: string, details?: unkn
 }
 
 export async function GET() {
-  console.log('Dashboard stats API called')
-  console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL)
-  console.log('DATABASE_URL preview:', process.env.DATABASE_URL?.substring(0, 50) + '...')
+  // CRITICAL: This route must be dynamic - never run during build
+  // Stats are fetched at runtime only
 
   const prisma = getPrisma()
   if (!prisma) {
@@ -26,18 +25,15 @@ export async function GET() {
     )
   }
 
-  console.log('Prisma client created successfully')
-
   try {
-    console.log('Starting database queries...')
-
     // Prisma connects lazily, so we test with a simple query instead of $connect()
     // This is more reliable and handles connection errors better
     try {
       await prisma.$queryRaw`SELECT 1`
-      console.log('Database connection verified')
     } catch (connectError: any) {
-      console.error('Database connection failed:', connectError)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Database connection failed:', connectError)
+      }
       // Return zeros instead of error to prevent dashboard crash
       return NextResponse.json({
         ok: true,
@@ -60,13 +56,17 @@ export async function GET() {
     ] = await Promise.all([
       // Total registered users
       prisma.user.count().catch((err: any) => {
-        console.error('User count error:', err?.message || err)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('User count error:', err?.message || err)
+        }
         return 0
       }),
 
       // Total projects
       prisma.project.count().catch((err: any) => {
-        console.error('Total projects count error:', err?.message || err)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Total projects count error:', err?.message || err)
+        }
         return 0
       }),
 
@@ -74,7 +74,9 @@ export async function GET() {
       prisma.project.count({
         where: { status: 'JARAYONDA' as any }
       }).catch((err: any) => {
-        console.error('Active projects count error:', err?.message || err)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Active projects count error:', err?.message || err)
+        }
         return 0
       }),
 
@@ -82,12 +84,12 @@ export async function GET() {
       prisma.project.count({
         where: { status: 'RAD_ETILDI' as any }
       }).catch((err: any) => {
-        console.error('Rejected projects count error:', err?.message || err)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Rejected projects count error:', err?.message || err)
+        }
         return 0
       }),
     ])
-
-    console.log('Database queries completed:', { usersCount, totalProjects, activeProjects, rejectedProjects })
 
     return NextResponse.json({
       ok: true,
@@ -99,8 +101,10 @@ export async function GET() {
       },
     })
   } catch (error: any) {
-    console.error('Dashboard stats error:', error)
-    console.error('Error details:', error?.message || String(error))
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Dashboard stats error:', error)
+      console.error('Error details:', error?.message || String(error))
+    }
     // Return zeros instead of error to prevent dashboard crash
     return NextResponse.json({
       ok: true,
