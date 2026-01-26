@@ -616,6 +616,8 @@ body {
   border: 1px solid rgba(226, 232, 240, 0.5);
   overflow: visible; /* Fixed: Allow projects list to be fully visible */
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1; /* Fixed: Ensure table container stays below modal */
 }
 
 .table-header {
@@ -1207,7 +1209,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.8);
   animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
-  z-index: 100000; /* Fixed: Ensure modal content is above overlay */
+  z-index: 1; /* Relative to overlay, which is already at root level */
   margin: 0 auto; /* Center horizontally */
 }
 
@@ -1698,6 +1700,8 @@ body {
   gap: 1rem;
   overflow: visible; /* Fixed: Allow content to be visible */
   min-height: 0; /* Allow flex child to shrink */
+  position: relative;
+  z-index: 1; /* Fixed: Ensure projects list stays below modal */
 }
 
 .project-item {
@@ -1708,6 +1712,8 @@ body {
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  position: relative;
+  z-index: 1; /* Fixed: Ensure project items stay below modal */
 }
 
 .project-item:hover {
