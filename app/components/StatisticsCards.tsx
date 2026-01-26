@@ -15,18 +15,37 @@ const StatisticsCards = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchStats = async () => {
+      setLoading(true);
+      setError(null);
+      
       try {
-        const response = await fetch('/api/dashboard/stats');
-        const result = await response.json();
+        const response = await fetch('/api/dashboard/stats', {
+          cache: 'no-store', // Prevent caching
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
+        
+        const result = await response.json().catch(() => null);
 
-        if (!response.ok) {
-          throw new Error(result.error?.message || 'Statistika yuklanmadi');
+        if (!isMounted) return;
+
+        if (!response.ok || !result || !result.ok) {
+          throw new Error(result?.error?.message || 'Statistika yuklanmadi');
         }
 
-        setStats(result.data);
-        setError(null);
+        if (result.data) {
+          setStats(result.data);
+          setError(null);
+        } else {
+          throw new Error('Statistika ma\'lumotlari topilmadi');
+        }
       } catch (err) {
+        if (!isMounted) return;
+        
         console.error('Failed to fetch dashboard stats:', err);
         setError('Statistika yuklanmadi');
         // Set default values for graceful degradation
@@ -37,11 +56,17 @@ const StatisticsCards = () => {
           rejectedProjects: 0,
         });
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchStats();
+    void fetchStats();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const formatNumber = (num: number): string => {

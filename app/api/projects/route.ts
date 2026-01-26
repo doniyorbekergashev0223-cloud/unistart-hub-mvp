@@ -3,6 +3,7 @@ import { getPrisma } from '@/lib/db'
 import { uploadProjectFile } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 type Role = 'user' | 'admin' | 'expert'
 type StatusLabel = 'Qabul qilindi' | 'Jarayonda' | 'Rad etildi'
@@ -58,30 +59,60 @@ export async function GET(req: Request) {
       ? {}
       : { userId: actor.userId }
 
-  const projects = await prisma.project.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      user: {
-        select: { id: true, name: true, email: true, role: true },
+  try {
+    const projects = await prisma.project.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, role: true },
+        },
       },
-    },
-  })
+    })
 
-  return NextResponse.json({
-    ok: true,
-    data: {
-      projects: projects.map((p) => ({
-        id: p.id,
-        title: p.title,
-        description: p.description,
-        contact: p.contact,
-        status: ENUM_TO_STATUS[String(p.status)] ?? 'Jarayonda',
-        createdAt: p.createdAt,
-        user: p.user,
-      })),
-    },
-  })
+    return NextResponse.json({
+      ok: true,
+      data: {
+        projects: projects.map((p) => ({
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          contact: p.contact,
+          status: ENUM_TO_STATUS[String(p.status)] ?? 'Jarayonda',
+          createdAt: p.createdAt,
+          user: p.user,
+        })),
+      },
+    })
+  } catch (error: any) {
+    console.error('Projects GET error:', error)
+    
+    // Database connection errors
+    const errorMessage = error?.message || ''
+    if (errorMessage.includes('MaxClientsInSessionMode') || errorMessage.includes('max clients reached')) {
+      return jsonError(
+        503,
+        'DATABASE_CONNECTION_LIMIT',
+        "Ma'lumotlar bazasi ulanish limitiga yetdi. CRITICAL_DATABASE_FIX.md faylini ko'ring."
+      )
+    }
+    if (errorMessage.includes('Authentication failed') || errorMessage.includes('database credentials')) {
+      return jsonError(
+        503,
+        'DATABASE_AUTHENTICATION_ERROR',
+        "Ma'lumotlar bazasi autentifikatsiya xatosi. DATABASE_AUTHENTICATION_FIX.md faylini ko'ring."
+      )
+    }
+    if (errorMessage.includes('Tenant or user not found')) {
+      return jsonError(
+        503,
+        'DATABASE_TENANT_ERROR',
+        "Ma'lumotlar bazasi username formati noto'g'ri. TENANT_USER_FIX.md faylini ko'ring."
+      )
+    }
+    
+    return jsonError(500, 'INTERNAL_ERROR', 'Server xatoligi yuz berdi.')
+  }
 }
 
 export async function POST(req: Request) {

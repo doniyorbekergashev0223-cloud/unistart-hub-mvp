@@ -66,27 +66,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Restore user from localStorage on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsedUser = JSON.parse(stored) as User;
-        // Verify session is still valid by checking with API
-        verifySession(parsedUser).then((isValid) => {
+    const restoreSession = async () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsedUser = JSON.parse(stored) as User;
+          // Verify session is still valid by checking with API
+          const isValid = await verifySession(parsedUser);
           if (isValid) {
             setUser(parsedUser);
           } else {
+            // Session invalid - clear storage
             localStorage.removeItem(STORAGE_KEY);
+            setUser(null);
           }
-          setIsLoading(false);
-        });
-      } else {
+        }
+      } catch (error) {
+        console.error('Failed to restore session:', error);
+        localStorage.removeItem(STORAGE_KEY);
+        setUser(null);
+      } finally {
         setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to restore session:', error);
-      localStorage.removeItem(STORAGE_KEY);
-      setIsLoading(false);
-    }
+    };
+    
+    void restoreSession();
   }, []);
 
   // Verify session with backend
@@ -98,9 +102,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           'x-user-id': user.id,
           'x-user-role': user.role,
         },
+        cache: 'no-store', // Prevent caching
       });
-      return response.ok;
-    } catch {
+      
+      if (!response.ok) {
+        return false;
+      }
+      
+      const result = await response.json().catch(() => null);
+      if (!result || !result.ok) {
+        return false;
+      }
+      
+      // Update user data if avatarUrl changed
+      if (result.data?.user) {
+        const updatedUser = { ...user, ...result.data.user };
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+        } catch {
+          // Ignore storage errors
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Session verification error:', error);
       return false;
     }
   };
@@ -126,31 +152,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    const response = await postJson<{ user: { id: string; name: string; email: string; role: UserRole } }>(
-      '/api/auth/login',
-      { email, password }
-    );
+    try {
+      const response = await postJson<{ user: { id: string; name: string; email: string; role: UserRole; avatarUrl?: string | null } }>(
+        '/api/auth/login',
+        { email, password }
+      );
 
-    if (response?.ok) {
-      saveUser(response.data.user);
-      return true;
+      if (response?.ok && response.data?.user) {
+        saveUser(response.data.user);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-
-    return false;
   };
 
   const register = async (name: string, email: string, password: string, role: UserRole): Promise<boolean> => {
-    const response = await postJson<{ user: { id: string; name: string; email: string; role: UserRole } }>(
-      '/api/auth/register',
-      { name, email, password }
-    );
+    try {
+      const response = await postJson<{ user: { id: string; name: string; email: string; role: UserRole; avatarUrl?: string | null } }>(
+        '/api/auth/register',
+        { name, email, password }
+      );
 
-    if (response?.ok) {
-      saveUser(response.data.user);
-      return true;
+      if (response?.ok && response.data?.user) {
+        saveUser(response.data.user);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Register error:', error);
+      return false;
     }
-
-    return false;
   };
 
   const logout = async () => {

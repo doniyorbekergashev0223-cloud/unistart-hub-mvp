@@ -49,7 +49,10 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) 
   const [isSearching, setIsSearching] = useState(false);
 
   const loadProjects = async () => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !user) {
+      setProjects([]);
+      return;
+    }
 
     try {
       const res = await fetch('/api/projects', {
@@ -58,18 +61,27 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) 
           'x-user-id': user.id,
           'x-user-role': user.role,
         },
+        cache: 'no-store', // Prevent caching
       });
+
+      if (!res.ok) {
+        console.error('Failed to load projects:', res.status, res.statusText);
+        // Keep existing projects on error
+        return;
+      }
 
       const json = (await res.json().catch(() => null)) as unknown;
       if (!isApiResponse<{ projects: Array<{ id: string; title: string; status: string; createdAt: string; user: { name: string } }> }>(json)) {
+        console.error('Invalid API response format');
         return;
       }
 
       if (!json.ok) {
+        console.error('API error:', json.error);
         return;
       }
 
-      const mapped: Project[] = json.data.projects.map((p) => ({
+      const mapped: Project[] = (json.data.projects || []).map((p) => ({
         id: p.id,
         name: p.title,
         user: p.user?.name ?? '—',
@@ -78,13 +90,19 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) 
       }));
 
       setProjects(mapped);
-    } catch {
-      // Network/parse xatolarida crash qilmaymiz (UI mock ma'lumotlar bilan qoladi)
+    } catch (error) {
+      console.error('Network error loading projects:', error);
+      // Keep existing projects on network error
     }
   };
 
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !user) {
+      setProjects([]);
+      setSearchQuery('');
+      setIsSearching(false);
+      return;
+    }
     void loadProjects();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user?.id, user?.role]);
