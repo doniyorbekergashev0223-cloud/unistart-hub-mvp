@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '../context/ProjectsContext';
 import { useAuth } from '../context/AuthContext';
@@ -44,6 +45,11 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
   const [submittingReview, setSubmittingReview] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectDetail | null>(null);
   const [loadingProject, setLoadingProject] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleStatusChange = (projectId: string | number, newStatus: string) => {
     // Simple refresh to show updated data from API
@@ -159,6 +165,71 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
     }
   };
 
+
+  const mobileReviewModal = reviewModal.isOpen ? (
+    <div className="admin-review-mobile">
+      <div className="modal-overlay" onClick={closeReviewModal}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h3>Loyihani ko'rib chiqish</h3>
+            <button onClick={closeReviewModal} className="modal-close" aria-label="Yopish">
+              ×
+            </button>
+          </div>
+
+          <div className="modal-body">
+            <form id="review-form-mobile" onSubmit={handleReviewSubmit} className="review-form">
+              <div className="form-group">
+                <label htmlFor="review-status-mobile" className="form-label">
+                  Status *
+                </label>
+                <select
+                  id="review-status-mobile"
+                  value={reviewForm.status}
+                  onChange={(e) => setReviewForm(prev => ({ ...prev, status: e.target.value }))}
+                  className="form-select"
+                  required
+                >
+                  <option value="Jarayonda">Jarayonda</option>
+                  <option value="Qabul qilindi">Qabul qilindi</option>
+                  <option value="Rad etildi">Rad etildi</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="review-comment-mobile" className="form-label">
+                  Izoh *
+                </label>
+                <textarea
+                  id="review-comment-mobile"
+                  value={reviewForm.comment}
+                  onChange={(e) => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
+                  className="form-textarea"
+                  placeholder="Loyiha haqida fikringizni yozing..."
+                  rows={4}
+                  required
+                />
+              </div>
+            </form>
+          </div>
+
+          <div className="modal-footer">
+            <button type="button" onClick={closeReviewModal} className="cancel-button">
+              Bekor qilish
+            </button>
+            <button 
+              type="submit" 
+              form="review-form-mobile"
+              disabled={submittingReview} 
+              className="submit-button"
+            >
+              {submittingReview ? 'Saqlanmoqda...' : 'Saqlash'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div className="table-container">
@@ -332,71 +403,10 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
             </div>
           </div>
 
-          {/* Mobile: Modal overlay */}
-          <div className="admin-review-mobile">
-            <div className="modal-overlay" onClick={closeReviewModal}>
-              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
-                  <h3>Loyihani ko'rib chiqish</h3>
-                  <button onClick={closeReviewModal} className="modal-close" aria-label="Yopish">
-                    ×
-                  </button>
-                </div>
-
-                <div className="modal-body">
-                  <form id="review-form-mobile" onSubmit={handleReviewSubmit} className="review-form">
-                    <div className="form-group">
-                      <label htmlFor="review-status-mobile" className="form-label">
-                        Status *
-                      </label>
-                      <select
-                        id="review-status-mobile"
-                        value={reviewForm.status}
-                        onChange={(e) => setReviewForm(prev => ({ ...prev, status: e.target.value }))}
-                        className="form-select"
-                        required
-                      >
-                        <option value="Jarayonda">Jarayonda</option>
-                        <option value="Qabul qilindi">Qabul qilindi</option>
-                        <option value="Rad etildi">Rad etildi</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="review-comment-mobile" className="form-label">
-                        Izoh *
-                      </label>
-                      <textarea
-                        id="review-comment-mobile"
-                        value={reviewForm.comment}
-                        onChange={(e) => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
-                        className="form-textarea"
-                        placeholder="Loyiha haqida fikringizni yozing..."
-                        rows={4}
-                        required
-                      />
-                    </div>
-                  </form>
-                </div>
-
-                <div className="modal-footer">
-                  <button type="button" onClick={closeReviewModal} className="cancel-button">
-                    Bekor qilish
-                  </button>
-                  <button 
-                    type="submit" 
-                    form="review-form-mobile"
-                    disabled={submittingReview} 
-                    className="submit-button"
-                  >
-                    {submittingReview ? 'Saqlanmoqda...' : 'Saqlash'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
+      {/* Mobile modal via portal to keep it above all layout */}
+      {mounted && createPortal(mobileReviewModal, document.body)}
     </div>
   );
 };

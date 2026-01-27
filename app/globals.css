@@ -5291,9 +5291,9 @@ body {
     height: 100vh !important;
     z-index: 1000001 !important; /* Fixed: Even higher for overlay */
     display: flex !important;
-    align-items: center !important;
+    align-items: flex-start !important; /* Modal ekranning yuqori qismidan boshlansin */
     justify-content: center !important;
-    padding: 1rem !important;
+    padding: 1.25rem 1rem !important; /* Yuqoridan biroz bo'sh joy */
     box-sizing: border-box !important;
     overflow: visible !important; /* Fixed: Allow modal content to be visible */
     pointer-events: auto !important;
@@ -5303,7 +5303,7 @@ body {
     position: relative !important;
     width: 100% !important;
     max-width: calc(100vw - 2rem) !important;
-    max-height: 90vh !important;
+    max-height: calc(100vh - 2.5rem) !important; /* Ekran ichida to'liq ko'rinishi uchun */
     margin: 0 !important;
     display: flex !important;
     flex-direction: column !important;
