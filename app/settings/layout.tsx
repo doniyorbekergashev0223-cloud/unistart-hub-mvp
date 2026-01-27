@@ -12,7 +12,6 @@ const settingsMenu = [
   { label: 'Xavfsizlik', href: '/settings/security' },
   { label: 'Bildirishnomalar', href: '/settings/notifications' },
   { label: 'Faollik', href: '/settings/activity' },
-  { label: 'Ko\'rinish', href: '/settings/appearance' },
 ];
 
 export default function SettingsLayout({

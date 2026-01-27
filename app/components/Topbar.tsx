@@ -22,6 +22,8 @@ interface UserWithAvatar {
   avatarUrl?: string;
 }
 
+type Theme = 'light' | 'dark' | 'system';
+
 const Topbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { searchProjects, isSearching } = useProjects();
@@ -34,6 +36,8 @@ const Topbar = () => {
   const [searchValue, setSearchValue] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [theme, setTheme] = useState<Theme>('system');
+  const [savingTheme, setSavingTheme] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -189,6 +193,68 @@ const Topbar = () => {
     { label: 'Chiqish', type: 'action', action: handleLogout }
   ];
 
+  const applyTheme = (selectedTheme: Theme) => {
+    const root = document.documentElement;
+
+    if (selectedTheme === 'system') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    } else {
+      root.setAttribute('data-theme', selectedTheme);
+    }
+
+    try {
+      localStorage.setItem('theme', selectedTheme);
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const loadThemeFromDB = async () => {
+    if (!user) return;
+
+    try {
+      const response = await fetch('/api/settings/appearance', {
+        headers: {
+          'x-user-id': user.id,
+          'x-user-role': user.role,
+        },
+      });
+
+      const result = await response.json().catch(() => null);
+      if (result?.ok && result.data?.theme) {
+        setTheme(result.data.theme as Theme);
+        applyTheme(result.data.theme as Theme);
+      }
+    } catch (error) {
+      console.error('Failed to load theme in Topbar:', error);
+    }
+  };
+
+  const handleThemeChange = async (newTheme: Theme) => {
+    if (!user) return;
+
+    setTheme(newTheme);
+    applyTheme(newTheme);
+    setSavingTheme(true);
+
+    try {
+      await fetch('/api/settings/appearance', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id,
+          'x-user-role': user.role,
+        },
+        body: JSON.stringify({ theme: newTheme }),
+      });
+    } catch (error) {
+      console.error('Failed to save theme from Topbar:', error);
+    } finally {
+      setSavingTheme(false);
+    }
+  };
+
   const toggleSidebar = () => {
     const newState = !sidebarOpen;
     setSidebarOpen(newState);
@@ -339,6 +405,104 @@ const Topbar = () => {
               </div>
             </>
           )}
+        </div>
+
+        {/* Theme toggle (sun/moon) next to notification */}
+        <div
+          className="topbar-theme-toggle"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: 'rgba(15, 23, 42, 0.03)',
+            borderRadius: 999,
+            padding: 2,
+            border: '1px solid rgba(226, 232, 240, 0.8)',
+            marginLeft: 8,
+            marginRight: 8,
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Yorug' rejim"
+            disabled={savingTheme}
+            onClick={() => handleThemeChange('light')}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 999,
+              border: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              background:
+                theme === 'light'
+                  ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
+                  : 'transparent',
+              color: theme === 'light' ? '#ffffff' : '#64748b',
+              boxShadow:
+                theme === 'light'
+                  ? '0 4px 14px rgba(249, 115, 22, 0.3)'
+                  : 'none',
+            }}
+          >
+            {/* Sun icon */}
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <line x1="12" y1="2" x2="12" y2="5" />
+              <line x1="12" y1="19" x2="12" y2="22" />
+              <line x1="4.22" y1="4.22" x2="6.34" y2="6.34" />
+              <line x1="17.66" y1="17.66" x2="19.78" y2="19.78" />
+              <line x1="2" y1="12" x2="5" y2="12" />
+              <line x1="19" y1="12" x2="22" y2="12" />
+              <line x1="4.22" y1="19.78" x2="6.34" y2="17.66" />
+              <line x1="17.66" y1="6.34" x2="19.78" y2="4.22" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            aria-label="Qorong'u rejim"
+            disabled={savingTheme}
+            onClick={() => handleThemeChange('dark')}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 999,
+              border: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              background:
+                theme === 'dark'
+                  ? 'linear-gradient(135deg, #0f172a 0%, #020617 100%)'
+                  : 'transparent',
+              color: theme === 'dark' ? '#ffffff' : '#64748b',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 4px 14px rgba(15, 23, 42, 0.4)'
+                  : 'none',
+            }}
+          >
+            {/* Moon icon */}
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M21 12.79A9 9 0 0 1 12.21 3 7 7 0 1 0 21 12.79z" />
+            </svg>
+          </button>
         </div>
 
         <div className="profile-container">
