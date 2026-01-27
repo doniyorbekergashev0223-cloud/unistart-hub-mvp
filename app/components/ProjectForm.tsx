@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '../context/ProjectsContext';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface FormData {
   projectName: string;
@@ -75,19 +76,48 @@ const ProjectForm = () => {
         return;
       }
 
-      // Create FormData for file upload
-      const formDataToSend = new FormData();
-      formDataToSend.append('title', formData.projectName.trim());
-      formDataToSend.append('description', formData.description.trim());
-      formDataToSend.append('contact', formData.contact.trim());
+      // 1) Faylni to'g'ridan-to'g'ri Supabase Storage'ga yuklash (Vercel body size limitini chetlab o'tish uchun)
+      let fileUrl: string | undefined;
 
-      // Add file if selected
       if (selectedFile) {
-        formDataToSend.append('file', selectedFile);
+        try {
+          const ext = selectedFile.name.split('.').pop() || 'dat';
+          const uniqueName = `${user.id}/${Date.now()}-${Math.random()
+            .toString(36)
+            .slice(2)}.${ext}`;
+
+          const { data, error } = await supabase.storage
+            .from('project-files')
+            .upload(uniqueName, selectedFile, {
+              cacheControl: '3600',
+              upsert: false,
+            });
+
+          if (error) {
+            console.error('Client-side file upload error:', error);
+            throw error;
+          }
+
+          const { data: publicData } = supabase.storage
+            .from('project-files')
+            .getPublicUrl(uniqueName);
+
+          if (publicData?.publicUrl) {
+            fileUrl = publicData.publicUrl;
+          } else {
+            throw new Error('Fayl URL ni olishda xatolik');
+          }
+        } catch (uploadError) {
+          console.error('Supabase file upload failed:', uploadError);
+          alert(
+            "Faylni Supabase Storage'ga yuklashda xatolik yuz berdi. Iltimos, qayta urinib ko'ring yoki faylsiz yuboring."
+          );
+        }
       }
 
-      // Prepare headers
+      // 2) Endi faqat metadata (va fileUrl) ni API ga JSON orqali yuboramiz
       const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
         'x-user-id': user.id,
         'x-user-role': user.role,
       };
@@ -95,11 +125,18 @@ const ProjectForm = () => {
       // Debug: Console'da headerlarni ko'rsatish
       console.log('📤 Request Headers:', headers);
 
-      // Submit to API with authentication headers
+      const payload = {
+        title: formData.projectName.trim(),
+        description: formData.description.trim(),
+        contact: formData.contact.trim(),
+        fileUrl,
+      };
+
+      // Submit to API with authentication headers (JSON)
       const response = await fetch('/api/projects', {
         method: 'POST',
-        headers: headers,
-        body: formDataToSend,
+        headers,
+        body: JSON.stringify(payload),
       });
 
       // Debug: Response'ni ko'rsatish

@@ -128,16 +128,45 @@ export async function POST(req: Request) {
     return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi (x-user-id va x-user-role headerlari yo'q).")
   }
 
-  // Parse FormData instead of JSON
-  const formData = await req.formData().catch(() => null)
-  if (!formData) {
-    return jsonError(400, 'INVALID_FORM_DATA', "Form ma'lumotlari noto'g'ri.")
-  }
+  const contentType = req.headers.get('content-type') || ''
 
-  const title = (formData.get('title') as string)?.trim() || ''
-  const description = (formData.get('description') as string)?.trim() || ''
-  const contact = (formData.get('contact') as string)?.trim() || ''
-  const file = formData.get('file') as File | null
+  let title = ''
+  let description = ''
+  let contact = ''
+  let file: File | null = null
+  let incomingFileUrl: string | undefined
+
+  if (contentType.includes('application/json')) {
+    // JSON format (fileUrl bilan) - katta fayllar uchun Vercel body limitini chetlab o'tish
+    const body = (await req.json().catch(() => null)) as
+      | null
+      | {
+          title?: unknown
+          description?: unknown
+          contact?: unknown
+          fileUrl?: unknown
+        }
+
+    if (!body) {
+      return jsonError(400, 'INVALID_JSON', "So'rov JSON formati noto'g'ri.")
+    }
+
+    title = typeof body.title === 'string' ? body.title.trim() : ''
+    description = typeof body.description === 'string' ? body.description.trim() : ''
+    contact = typeof body.contact === 'string' ? body.contact.trim() : ''
+    incomingFileUrl = typeof body.fileUrl === 'string' ? body.fileUrl.trim() || undefined : undefined
+  } else {
+    // Eski FormData formatini qo'llab-quvvatlash (orqaga moslik uchun)
+    const formData = await req.formData().catch(() => null)
+    if (!formData) {
+      return jsonError(400, 'INVALID_FORM_DATA', "Form ma'lumotlari noto'g'ri.")
+    }
+
+    title = (formData.get('title') as string)?.trim() || ''
+    description = (formData.get('description') as string)?.trim() || ''
+    contact = (formData.get('contact') as string)?.trim() || ''
+    file = formData.get('file') as File | null
+  }
 
   const fieldErrors: Record<string, string> = {}
   if (!title) fieldErrors.title = 'Loyiha nomi majburiy'
@@ -190,10 +219,10 @@ export async function POST(req: Request) {
       return jsonError(401, 'UNAUTHORIZED', 'Foydalanuvchi topilmadi.')
     }
 
-    let fileUrl: string | undefined
+    let fileUrl: string | undefined = incomingFileUrl
 
-    // Upload file to Supabase if provided
-    if (file && file.size > 0) {
+    // Agar JSON orqali fileUrl kelmagan bo'lsa, FormData'dan kelgan faylni server tarafda yuklaymiz (orqaga moslik uchun)
+    if (!fileUrl && file && file.size > 0) {
       try {
         fileUrl = await uploadProjectFile(file, userIdToUse)
       } catch (uploadError: any) {
