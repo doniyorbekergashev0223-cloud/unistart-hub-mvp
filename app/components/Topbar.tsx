@@ -351,23 +351,6 @@ const Topbar = () => {
           </button>
 
           {showNotifications && (
-            <>
-              <div 
-                className="dropdown-backdrop" 
-                onClick={() => {
-                  setShowNotifications(false);
-                }}
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: 'rgba(0, 0, 0, 0.3)',
-                  zIndex: 10000,
-                  pointerEvents: 'auto',
-                }}
-              />
               <div className="notification-dropdown">
                 <div className="notification-header">
                   <h4>Bildirishnomalar</h4>
@@ -403,7 +386,6 @@ const Topbar = () => {
                 )}
                 </div>
               </div>
-            </>
           )}
         </div>
 
@@ -559,74 +541,58 @@ const Topbar = () => {
           </button>
 
           {showDropdown && (
-            <>
-              <div 
-                className="dropdown-backdrop" 
-                onClick={() => {
-                  setShowDropdown(false);
-                }}
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: 'rgba(0, 0, 0, 0.3)',
-                  zIndex: 9999,
-                  pointerEvents: 'auto',
-                }}
-              />
               <div className="profile-dropdown">
-                {dropdownItems.map((item, index) => (
-                item.type === 'action' ? (
-                  <button
-                    key={index}
-                    onClick={item.action}
-                    className="dropdown-item logout-button"
-                  >
-                    {item.label}
-                  </button>
-                ) : item.type === 'link' && item.action ? (
-                  <button
-                    key={index}
-                    onClick={item.action}
-                    className="dropdown-item link-button"
-                  >
-                    {item.label}
-                  </button>
-                ) : item.type === 'info' ? (
-                  <div key={index} className={`dropdown-item ${item.type}`}>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      background: (user as any)?.avatarUrl 
-                        ? `url(${(user as any).avatarUrl})` 
-                        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontWeight: 700,
-                      fontSize: '1.125rem',
-                      flexShrink: 0,
-                      border: '3px solid rgba(255, 255, 255, 0.3)',
-                      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-                    }}>
-                      {!(user as any)?.avatarUrl && ((item as any).initials || 'U')}
+                {dropdownItems.map((item, index) =>
+                  item.type === 'action' ? (
+                    <button
+                      key={index}
+                      onClick={item.action}
+                      className="dropdown-item logout-button"
+                    >
+                      {item.label}
+                    </button>
+                  ) : item.type === 'link' && item.action ? (
+                    <button
+                      key={index}
+                      onClick={item.action}
+                      className="dropdown-item link-button"
+                    >
+                      {item.label}
+                    </button>
+                  ) : item.type === 'info' ? (
+                    <div key={index} className={`dropdown-item ${item.type}`}>
+                      <div
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          borderRadius: '50%',
+                          background: (user as any)?.avatarUrl
+                            ? `url(${(user as any).avatarUrl})`
+                            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontWeight: 700,
+                          fontSize: '1.125rem',
+                          flexShrink: 0,
+                          border: '3px solid rgba(255, 255, 255, 0.3)',
+                          boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                        }}
+                      >
+                        {!(user as any)?.avatarUrl && ((item as any).initials || 'U')}
+                      </div>
+                      <span>{item.label}</span>
                     </div>
-                    <span>{item.label}</span>
-                  </div>
-                ) : (
-                  <div key={index} className={`dropdown-item ${item.type}`}>
-                    {item.label}
-                  </div>
-                )
-              ))}
+                  ) : (
+                    <div key={index} className={`dropdown-item ${item.type}`}>
+                      {item.label}
+                    </div>
+                  )
+                )}
               </div>
-            </>
           )}
         </div>
       </div>
