@@ -574,10 +574,10 @@
   border-color: var(--color-primary-accent-soft);
 }
 
-/* ——— 2) HAMKOR TASHKILOTLAR ——— (same card style as .chart-card) */
+/* ——— 2) HAMKOR TASHKILOTLAR ——— logo + nom yonma-yon, 6 ustun */
 .public-logos-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: var(--grid-gap);
 }
 
@@ -589,12 +589,14 @@
   box-shadow: var(--shadow-card);
   padding: var(--card-padding);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: var(--space-lg);
+  justify-content: flex-start;
+  gap: var(--space-md);
   transition: transform 0.35s var(--ease-out), box-shadow 0.35s ease, border-color 0.35s ease;
   position: relative;
   overflow: hidden;
+  text-align: left;
 }
 
 /* Shine sweep on hover */
@@ -630,33 +632,29 @@
   }
 }
 
-/* Fixed frame so all logos appear same size */
+/* Logo ramka — logolar yonida nom */
 .public-logo-img-wrap {
-  width: 200px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-/* Jizzax Pedagogika — biroz kattaroq logo */
 .public-logo-item--larger .public-logo-img-wrap {
-  width: 220px;
-  height: 88px;
+  width: 64px;
+  height: 64px;
 }
 
+.public-logo-img,
 .public-logo-item--larger .public-logo-img {
-  max-width: 220px;
-  max-height: 88px;
-}
-
-/* Logos always colored — no grayscale; fill frame, same apparent size */
-.public-logo-img {
   width: 100%;
   height: 100%;
-  max-width: 200px;
-  max-height: 80px;
+  max-width: 64px;
+  max-height: 64px;
   object-fit: contain;
   object-position: center;
   opacity: 1;
@@ -668,8 +666,8 @@
 }
 
 .public-logo-fallback {
-  width: 200px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
   background: rgba(248, 250, 252, 0.8);
   border-radius: var(--radius-button);
   display: flex;
@@ -684,8 +682,16 @@
   font-size: 0.8125rem;
   font-weight: var(--font-weight-semibold);
   color: var(--pd-text-secondary);
-  text-align: center;
-  line-height: 1.4;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.35;
 }
 
 /* ——— 3) CHARTS ——— (same as .chart-card, .charts-grid) */

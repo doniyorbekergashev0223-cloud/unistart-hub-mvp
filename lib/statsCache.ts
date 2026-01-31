@@ -35,5 +35,5 @@ export function orgStatsKey(organizationId: string, role: string, userId: string
 }
 
 export function publicStatsKey(): string {
-  return 'public_stats'
+  return 'public_dashboard_stats_global'
 }

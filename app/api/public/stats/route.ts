@@ -5,58 +5,91 @@ import { getStats, setStats, publicStatsKey } from '@/lib/statsCache'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Partner universities count (display only)
 const PARTNER_UNIVERSITIES_COUNT = 5
-// Jami tashkilotlar — doimiy 6 ta (seed dagi tashkilotlar soni, o'zgarmas)
 const JAMI_TASHKILOTLAR = 6
 
-function emptyResponse() {
+type PublicStatsData = {
+  usersCount: number
+  totalProjects: number
+  activeProjects: number
+  rejectedProjects: number
+  organizationsCount: number
+  universitiesCount: number
+  youthAgencyUsersCount: number
+  userGrowthByMonth: { month: string; count: number; year: number }[]
+  projectsByStatus: { jarayonda: number; qabulQilindi: number; radEtildi: number }
+}
+
+type PublicStatsPayload = { ok: true; data: PublicStatsData }
+
+const EMPTY_DATA: PublicStatsData = {
+  usersCount: 0,
+  totalProjects: 0,
+  activeProjects: 0,
+  rejectedProjects: 0,
+  organizationsCount: JAMI_TASHKILOTLAR,
+  universitiesCount: PARTNER_UNIVERSITIES_COUNT,
+  youthAgencyUsersCount: 0,
+  userGrowthByMonth: [],
+  projectsByStatus: { jarayonda: 0, qabulQilindi: 0, radEtildi: 0 },
+}
+
+function emptyResponse(): NextResponse {
   return NextResponse.json(
+    { ok: true, data: EMPTY_DATA } as PublicStatsPayload,
     {
-      ok: true,
-      data: {
-        usersCount: 0,
-        totalProjects: 0,
-        organizationsCount: JAMI_TASHKILOTLAR,
-        universitiesCount: PARTNER_UNIVERSITIES_COUNT,
-        youthAgencyUsersCount: 0,
-        userGrowthByMonth: [] as { month: string; count: number; year: number }[],
-        projectsByStatus: { jarayonda: 0, qabulQilindi: 0, radEtildi: 0 },
-      },
-    },
-    {
-      headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
-      },
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' },
     }
   )
 }
 
+function jsonResponse(payload: PublicStatsPayload): NextResponse {
+  return NextResponse.json(payload, {
+    headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' },
+  })
+}
+
 export async function GET() {
+  const cacheKey = publicStatsKey()
+
+  let cached: PublicStatsPayload | null = null
   try {
-    if (!prismaDirect) {
-      return emptyResponse()
+    cached = getStats<PublicStatsPayload>(cacheKey)
+  } catch {
+    // cache read failed, proceed to DB
+  }
+  if (cached != null && typeof cached.ok === 'boolean' && cached.ok === true && cached.data != null) {
+    const d = cached.data
+    const safe: PublicStatsPayload = {
+      ok: true,
+      data: {
+        usersCount: typeof d.usersCount === 'number' ? d.usersCount : 0,
+        totalProjects: typeof d.totalProjects === 'number' ? d.totalProjects : 0,
+        activeProjects: typeof d.activeProjects === 'number' ? d.activeProjects : (d.projectsByStatus?.jarayonda ?? 0),
+        rejectedProjects: typeof d.rejectedProjects === 'number' ? d.rejectedProjects : (d.projectsByStatus?.radEtildi ?? 0),
+        organizationsCount: typeof d.organizationsCount === 'number' ? d.organizationsCount : JAMI_TASHKILOTLAR,
+        universitiesCount: typeof d.universitiesCount === 'number' ? d.universitiesCount : PARTNER_UNIVERSITIES_COUNT,
+        youthAgencyUsersCount: typeof d.youthAgencyUsersCount === 'number' ? d.youthAgencyUsersCount : 0,
+        userGrowthByMonth: Array.isArray(d.userGrowthByMonth) ? d.userGrowthByMonth : [],
+        projectsByStatus: d.projectsByStatus && typeof d.projectsByStatus === 'object'
+          ? {
+              jarayonda: typeof d.projectsByStatus.jarayonda === 'number' ? d.projectsByStatus.jarayonda : 0,
+              qabulQilindi: typeof d.projectsByStatus.qabulQilindi === 'number' ? d.projectsByStatus.qabulQilindi : 0,
+              radEtildi: typeof d.projectsByStatus.radEtildi === 'number' ? d.projectsByStatus.radEtildi : 0,
+            }
+          : { jarayonda: 0, qabulQilindi: 0, radEtildi: 0 },
+      },
     }
+    return jsonResponse(safe)
+  }
 
-    const cacheKey = publicStatsKey()
-    let cached: { ok: true; data: Record<string, unknown> } | null = null
-    try {
-      cached = getStats(cacheKey)
-    } catch {
-      // cache read failed, proceed to DB
-    }
-    if (cached) {
-      return NextResponse.json(cached, {
-        headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' },
-      })
-    }
+  if (!prismaDirect) {
+    const fallback = getStats<PublicStatsPayload>(cacheKey)
+    if (fallback != null && fallback.data) return jsonResponse(fallback)
+    return emptyResponse()
+  }
 
-    try {
-      await prismaDirect.$queryRaw`SELECT 1`
-    } catch {
-      return emptyResponse()
-    }
-
+  try {
     const [usersCount, totalProjects, userDates, statusCounts, youthAgencyUsersCount] = await Promise.all([
       prismaDirect.user.count(),
       prismaDirect.project.count(),
@@ -70,7 +103,6 @@ export async function GET() {
       }),
     ])
 
-    // Aggregate user registrations by month (anonymized)
     const monthMap = new Map<string, number>()
     const monthNames = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr']
     for (const u of userDates) {
@@ -93,20 +125,21 @@ export async function GET() {
     const statusMap = Object.fromEntries(
       statusCounts.map((s) => [s.status, s._count.id])
     )
-    const projectsByStatus = {
-      jarayonda: statusMap.JARAYONDA ?? 0,
-      qabulQilindi: statusMap.QABUL_QILINDI ?? 0,
-      radEtildi: statusMap.RAD_ETILDI ?? 0,
-    }
+    const jarayonda = statusMap.JARAYONDA ?? 0
+    const qabulQilindi = statusMap.QABUL_QILINDI ?? 0
+    const radEtildi = statusMap.RAD_ETILDI ?? 0
+    const projectsByStatus = { jarayonda, qabulQilindi, radEtildi }
 
-    const payload = {
-      ok: true as const,
+    const payload: PublicStatsPayload = {
+      ok: true,
       data: {
-        usersCount,
-        totalProjects,
+        usersCount: Number(usersCount),
+        totalProjects: Number(totalProjects),
+        activeProjects: jarayonda,
+        rejectedProjects: radEtildi,
         organizationsCount: JAMI_TASHKILOTLAR,
         universitiesCount: PARTNER_UNIVERSITIES_COUNT,
-        youthAgencyUsersCount,
+        youthAgencyUsersCount: Number(youthAgencyUsersCount),
         userGrowthByMonth,
         projectsByStatus,
       },
@@ -114,20 +147,12 @@ export async function GET() {
     try {
       setStats(cacheKey, payload)
     } catch {
-      // cache write failed, response still valid
+      // cache write failed
     }
-    return NextResponse.json(
-      payload,
-      {
-        headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
-        },
-      }
-    )
-  } catch (err) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Public stats error:', err)
-    }
+    return jsonResponse(payload)
+  } catch (_err) {
+    const fallback = getStats<PublicStatsPayload>(cacheKey)
+    if (fallback != null && fallback.data) return jsonResponse(fallback)
     return emptyResponse()
   }
 }

@@ -78,15 +78,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Restore session from httpOnly cookie via /api/auth/verify (no client identity sent)
   useEffect(() => {
-    const restoreSession = async () => {
+    let cancelled = false;
+    const restoreSession = async (retry = 0) => {
+      let willRetry = false;
       try {
         const response = await fetch('/api/auth/verify', {
           method: 'GET',
           credentials: 'include',
           cache: 'no-store',
-          signal: AbortSignal.timeout(5000),
         });
 
+        if (cancelled) return;
         if (!response.ok) {
           setUser(null);
           setOrganization(null);
@@ -94,6 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         const result = await response.json().catch(() => null);
+        if (cancelled) return;
         if (result?.ok && result.data?.user) {
           setUser(result.data.user);
           setOrganization(result.data?.organization ?? null);
@@ -102,14 +105,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setOrganization(null);
         }
       } catch {
+        if (cancelled) return;
+        if (retry < 1) {
+          willRetry = true;
+          setTimeout(() => restoreSession(retry + 1), 1500);
+          return;
+        }
         setUser(null);
         setOrganization(null);
       } finally {
-        setIsLoading(false);
+        if (!cancelled && !willRetry) setIsLoading(false);
       }
     };
 
     void restoreSession();
+    return () => { cancelled = true; };
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {

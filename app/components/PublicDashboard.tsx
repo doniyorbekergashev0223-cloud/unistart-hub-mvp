@@ -393,11 +393,11 @@ export default function PublicDashboard() {
                   <Image
                     src={org.logoUrl}
                     alt={org.name}
-                    width={200}
-                    height={80}
+                    width={64}
+                    height={64}
                     className="public-logo-img"
                     loading="lazy"
-                    sizes="(max-width: 767px) 100vw, 200px"
+                    sizes="64px"
                   />
                 </div>
                 <span className="public-logo-name">{org.name}</span>
