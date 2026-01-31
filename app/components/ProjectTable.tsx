@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '../context/ProjectsContext';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import '../styles/ProjectTable.css';
 
 interface ReviewFormData {
@@ -14,7 +15,11 @@ interface ReviewFormData {
 
 interface ProjectTableProps {
   showAdminControls?: boolean;
+  /** Section title (e.g. "Mening loyihalarim", "Loyihalarni ko'rib chiqish"). Default: "Loyihalar ro'yxati" */
+  sectionTitle?: string;
 }
+
+type StatusFilterValue = 'Barchasi' | 'Jarayonda' | 'Qabul qilindi' | 'Rad etildi';
 
 interface ProjectDetail {
   id: string;
@@ -23,6 +28,7 @@ interface ProjectDetail {
   contact: string;
   status: string;
   createdAt: string;
+  fileUrl?: string | null;
   owner: {
     id: string;
     name: string;
@@ -30,10 +36,21 @@ interface ProjectDetail {
   };
 }
 
-const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }) => {
-  const { projects, addProject, searchQuery, isSearching } = useProjects();
+const LOCALE_MAP = { uz: 'uz-UZ', ru: 'ru-RU', en: 'en-US' } as const;
+const STATUS_TO_KEY: Record<string, string> = {
+  'Qabul qilindi': 'status.accepted',
+  Jarayonda: 'status.pending',
+  'Rad etildi': 'status.rejected',
+};
+
+const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false, sectionTitle }) => {
+  const { projects, addProject, searchQuery, isSearching, isLoading } = useProjects();
   const { user } = useAuth();
+  const { t, locale } = useLocale();
+  const sectionTitleResolved = sectionTitle ?? t('nav.projectsList');
+  const dateLocale = LOCALE_MAP[locale] ?? 'uz-UZ';
   const router = useRouter();
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('Jarayonda');
   const [reviewModal, setReviewModal] = useState<{ isOpen: boolean; projectId: string | null }>({
     isOpen: false,
     projectId: null,
@@ -43,9 +60,17 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
     comment: '',
   });
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectDetail | null>(null);
   const [loadingProject, setLoadingProject] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const filteredProjects =
+    showAdminControls && user?.role === 'expert'
+      ? statusFilter === 'Barchasi'
+        ? projects
+        : projects.filter((p) => p.status === statusFilter)
+      : projects;
 
   useEffect(() => {
     setMounted(true);
@@ -63,16 +88,14 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
     setReviewModal({ isOpen: true, projectId });
     setReviewForm({ status: 'Jarayonda', comment: '' });
     setSelectedProject(null);
+    setSubmitSuccess(false);
     setLoadingProject(true);
     
     // Fetch project details for desktop layout
     if (user) {
       try {
         const response = await fetch(`/api/projects/${projectId}`, {
-          headers: {
-            'x-user-id': user.id,
-            'x-user-role': user.role,
-          },
+          credentials: 'include',
         });
         
         if (response.ok) {
@@ -98,7 +121,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
     setReviewModal({ isOpen: false, projectId: null });
     setReviewForm({ status: 'Jarayonda', comment: '' });
     setSelectedProject(null);
-    // Enable body scroll when modal closes
+    setSubmitSuccess(false);
     document.body.style.overflow = '';
   };
 
@@ -113,24 +136,28 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
     e.preventDefault();
     if (!user || !reviewModal.projectId) return;
 
+    if (!window.confirm(t('projectTable.confirmReview'))) return;
+
     setSubmittingReview(true);
+    setSubmitSuccess(false);
     try {
       const response = await fetch(`/api/projects/${reviewModal.projectId}/review`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user.id,
-          'x-user-role': user.role,
         },
+        credentials: 'include',
         body: JSON.stringify(reviewForm),
       });
 
       if (response.ok) {
-        closeReviewModal();
-        // Refresh the page to show updated data
+        setSubmitSuccess(true);
+        window.dispatchEvent(new CustomEvent('notifications-refetch'));
+        window.dispatchEvent(new CustomEvent('stats-refetch'));
         setTimeout(() => {
+          closeReviewModal();
           window.location.reload();
-        }, 500);
+        }, 1500);
       } else {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error?.message || 'Ko\'rib chiqishda xatolik yuz berdi';
@@ -171,17 +198,22 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
       <div className="modal-overlay" onClick={closeReviewModal}>
         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
-            <h3>Loyihani ko'rib chiqish</h3>
-            <button onClick={closeReviewModal} className="modal-close" aria-label="Yopish">
+            <h3>{t('projectTable.reviewTitle')}</h3>
+            <button onClick={closeReviewModal} className="modal-close" aria-label={t('projectTable.close')}>
               ×
             </button>
           </div>
 
           <div className="modal-body">
+            {submitSuccess ? (
+              <div className="admin-review-success" role="status" aria-live="polite">
+                <p>{t('projectTable.reviewSuccess')}</p>
+              </div>
+            ) : (
             <form id="review-form-mobile" onSubmit={handleReviewSubmit} className="review-form">
               <div className="form-group">
                 <label htmlFor="review-status-mobile" className="form-label">
-                  Status *
+                  {t('projectTable.status')} *
                 </label>
                 <select
                   id="review-status-mobile"
@@ -190,32 +222,34 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
                   className="form-select"
                   required
                 >
-                  <option value="Jarayonda">Jarayonda</option>
-                  <option value="Qabul qilindi">Qabul qilindi</option>
-                  <option value="Rad etildi">Rad etildi</option>
+                  <option value="Jarayonda">{t('status.pending')}</option>
+                  <option value="Qabul qilindi">{t('status.accepted')}</option>
+                  <option value="Rad etildi">{t('status.rejected')}</option>
                 </select>
               </div>
 
               <div className="form-group">
                 <label htmlFor="review-comment-mobile" className="form-label">
-                  Izoh *
+                  {t('projectTable.comment')} *
                 </label>
                 <textarea
                   id="review-comment-mobile"
                   value={reviewForm.comment}
                   onChange={(e) => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
                   className="form-textarea"
-                  placeholder="Loyiha haqida fikringizni yozing..."
+                  placeholder={t('projectTable.commentPlaceholder')}
                   rows={4}
                   required
                 />
               </div>
             </form>
+            )}
           </div>
 
+          {!submitSuccess && (
           <div className="modal-footer">
             <button type="button" onClick={closeReviewModal} className="cancel-button">
-              Bekor qilish
+              {t('common.cancel')}
             </button>
             <button 
               type="submit" 
@@ -223,9 +257,10 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
               disabled={submittingReview} 
               className="submit-button"
             >
-              {submittingReview ? 'Saqlanmoqda...' : 'Saqlash'}
+              {submittingReview ? t('projectTable.saving') : t('projectTable.save')}
             </button>
           </div>
+          )}
         </div>
       </div>
     </div>
@@ -236,16 +271,44 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
       {/* Projects List - Hidden on desktop when review is open */}
       <div className={`projects-list-container ${reviewModal.isOpen ? 'desktop-hidden' : ''}`}>
         <div className="table-header">
-          <h3>Loyihalar ro'yxati</h3>
-          {showAdminControls && user?.role === 'admin' && (
-            <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem' }}>
-              Admin: Statusni o'zgartirish va izoh qoldirish uchun loyihani bosing
+          <h3>{sectionTitleResolved}</h3>
+          {showAdminControls && (user?.role === 'admin' || user?.role === 'expert') && (
+            <p className="expert-review-hint">
+              {t('projectTable.expertHint')}
             </p>
           )}
         </div>
 
+        {showAdminControls && user?.role === 'expert' && (
+          <div className="expert-status-filter" role="tablist" aria-label={t('projectTable.filterByStatus')}>
+            {[
+              { value: 'Jarayonda' as const, labelKey: 'status.pending' },
+              { value: 'Qabul qilindi' as const, labelKey: 'status.accepted' },
+              { value: 'Rad etildi' as const, labelKey: 'status.rejected' },
+              { value: 'Barchasi' as const, labelKey: 'status.all' },
+            ].map(({ value, labelKey }) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={statusFilter === value}
+                className={`expert-filter-tab ${statusFilter === value ? 'expert-filter-tab-active' : ''}`}
+                onClick={() => setStatusFilter(value)}
+              >
+                {t(labelKey)}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="projects-list">
-        {projects.map((project) => (
+        {isLoading ? (
+          <div className="no-projects" style={{ padding: '2rem', textAlign: 'center' }}>
+            <p>{t('projectTable.loading')}</p>
+          </div>
+        ) : (
+        <>
+        {filteredProjects.map((project) => (
             <div key={project.id} className="project-item">
               <div
                 className="project-row"
@@ -255,13 +318,13 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
                 <div className="project-info">
                   <div className="project-name">{project.name}</div>
                   <div className="project-meta">
-                    <span className="project-user">{project.user}</span>
+                    {showAdminControls && <span className="project-user">{project.user}</span>}
                     <span className="project-date">{project.date}</span>
                   </div>
                 </div>
                 <div className="project-status">
                   <span className={`status-badge ${getStatusClass(project.status)}`}>
-                    {project.status}
+                    {t(STATUS_TO_KEY[project.status] ?? 'status.pending')}
                   </span>
                   <div className="project-actions">
                     {showAdminControls && user && (user.role === 'admin' || user.role === 'expert') && (
@@ -272,7 +335,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
                         }}
                         className="review-button"
                       >
-                        Ko'rib chiqish
+                        {t('projectTable.review')}
                       </button>
                     )}
                   </div>
@@ -281,10 +344,20 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
           </div>
         ))}
 
-        {projects.length === 0 && !isSearching && (
+        {filteredProjects.length === 0 && !isSearching && (
           <div className="no-projects">
-            <p>{searchQuery ? 'Mos loyiha topilmadi' : "Hali loyihalar yo'q"}</p>
+            <p>
+              {searchQuery
+                ? t('projectTable.noMatch')
+                : showAdminControls && user?.role === 'expert'
+                  ? statusFilter === 'Barchasi'
+                    ? t('projectTable.noProjectsYet')
+                    : t('projectTable.noProjectsInStatus')
+                  : t('projectTable.noProjectsHint')}
+            </p>
           </div>
+        )}
+        </>
         )}
         </div>
       </div>
@@ -296,13 +369,13 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
           <div className="admin-review-desktop">
             <div className="admin-review-desktop-header">
               <button onClick={closeReviewModal} className="admin-review-back-button">
-                ← Loyihalar ro'yxatiga qaytish
+                ← {t('projectTable.backToList')}
               </button>
             </div>
             <div className="admin-review-desktop-content">
               <div className="admin-review-left">
                 {loadingProject ? (
-                  <div style={{ padding: '2rem', textAlign: 'center' }}>Yuklanmoqda...</div>
+                  <div style={{ padding: '2rem', textAlign: 'center' }}>{t('projectTable.loading')}</div>
                 ) : selectedProject ? (
                   <div className="admin-review-project-info">
                     <div className="admin-review-project-header">
@@ -310,51 +383,71 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
                     </div>
                     <div className="admin-review-project-details">
                       <div className="admin-review-detail-row">
-                        <span className="admin-review-label">Holat:</span>
+                        <span className="admin-review-label">{t('projectTable.statusLabel')}:</span>
                         <span className={`status-badge ${getStatusClass(selectedProject.status)}`}>
-                          {selectedProject.status}
+                          {STATUS_TO_KEY[selectedProject.status] ? t(STATUS_TO_KEY[selectedProject.status]) : selectedProject.status}
                         </span>
                       </div>
                       <div className="admin-review-detail-row">
-                        <span className="admin-review-label">Tavsif:</span>
+                        <span className="admin-review-label">{t('projectTable.description')}:</span>
                         <span className="admin-review-value">{selectedProject.description}</span>
                       </div>
                       <div className="admin-review-detail-row">
-                        <span className="admin-review-label">Aloqa:</span>
+                        <span className="admin-review-label">{t('projectTable.contact')}:</span>
                         <span className="admin-review-value">{selectedProject.contact}</span>
                       </div>
                       <div className="admin-review-detail-row">
-                        <span className="admin-review-label">Muallif:</span>
+                        <span className="admin-review-label">{t('projectTable.authorLabel')}:</span>
                         <span className="admin-review-value">
                           {selectedProject.owner.name} ({selectedProject.owner.email})
                         </span>
                       </div>
                       <div className="admin-review-detail-row">
-                        <span className="admin-review-label">Yaratilgan sana:</span>
+                        <span className="admin-review-label">{t('projectTable.createdAt')}:</span>
                         <span className="admin-review-value">
-                          {new Date(selectedProject.createdAt).toLocaleDateString('uz-UZ', {
+                          {new Date(selectedProject.createdAt).toLocaleDateString(dateLocale, {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric',
                           })}
                         </span>
                       </div>
+                      {selectedProject.fileUrl && (
+                        <div className="admin-review-detail-row">
+                          <span className="admin-review-label">{t('projectTable.attachment')}:</span>
+                          <span className="admin-review-value">
+                            <a
+                              href={selectedProject.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="admin-review-attachment-link"
+                            >
+                              {t('projectTable.downloadFile')}
+                            </a>
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
-                  <div style={{ padding: '2rem', textAlign: 'center' }}>Loyiha ma'lumotlari yuklanmadi</div>
+                  <div style={{ padding: '2rem', textAlign: 'center' }}>{t('projectTable.projectLoadError')}</div>
                 )}
               </div>
               <div className="admin-review-right">
                 <div className="admin-review-form-card">
                   <div className="admin-review-form-header">
-                    <h3>Loyihani ko'rib chiqish</h3>
+                    <h3>{t('projectTable.reviewTitle')}</h3>
                   </div>
+                  {submitSuccess ? (
+                    <div className="admin-review-success" role="status" aria-live="polite">
+                      <p>{t('projectTable.reviewSuccess')}</p>
+                    </div>
+                  ) : (
                   <div className="admin-review-form-body">
                     <form id="review-form" onSubmit={handleReviewSubmit} className="review-form">
                       <div className="form-group">
                         <label htmlFor="review-status" className="form-label">
-                          Status *
+                          {t('projectTable.status')} *
                         </label>
                         <select
                           id="review-status"
@@ -363,31 +456,33 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
                           className="form-select"
                           required
                         >
-                          <option value="Jarayonda">Jarayonda</option>
-                          <option value="Qabul qilindi">Qabul qilindi</option>
-                          <option value="Rad etildi">Rad etildi</option>
+                          <option value="Jarayonda">{t('status.pending')}</option>
+                          <option value="Qabul qilindi">{t('status.accepted')}</option>
+                          <option value="Rad etildi">{t('status.rejected')}</option>
                         </select>
                       </div>
 
                       <div className="form-group">
                         <label htmlFor="review-comment" className="form-label">
-                          Izoh *
+                          {t('projectTable.comment')} *
                         </label>
                         <textarea
                           id="review-comment"
                           value={reviewForm.comment}
                           onChange={(e) => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
                           className="form-textarea"
-                          placeholder="Loyiha haqida fikringizni yozing..."
+                          placeholder={t('projectTable.commentPlaceholder')}
                           rows={6}
                           required
                         />
                       </div>
                     </form>
                   </div>
+                  )}
+                  {!submitSuccess && (
                   <div className="admin-review-form-footer">
                     <button type="button" onClick={closeReviewModal} className="cancel-button">
-                      Bekor qilish
+                      {t('common.cancel')}
                     </button>
                     <button 
                       type="submit" 
@@ -395,9 +490,10 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ showAdminControls = false }
                       disabled={submittingReview} 
                       className="submit-button"
                     >
-                      {submittingReview ? 'Saqlanmoqda...' : 'Saqlash'}
+                      {submittingReview ? t('projectTable.saving') : t('projectTable.save')}
                     </button>
                   </div>
+                  )}
                 </div>
               </div>
             </div>

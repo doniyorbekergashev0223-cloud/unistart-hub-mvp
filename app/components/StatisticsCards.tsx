@@ -1,6 +1,53 @@
 "use client";
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useTranslation } from '../context/LocaleContext';
 import '../styles/StatisticsCards.css';
+
+const COUNT_UP_DURATION_MS = 800;
+
+function useReducedMotion(): boolean {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduce(m.matches);
+    const handler = () => setReduce(m.matches);
+    m.addEventListener('change', handler);
+    return () => m.removeEventListener('change', handler);
+  }, []);
+  return reduce;
+}
+
+function useCountUp(value: number | undefined, enabled: boolean, skipAnimation: boolean): number {
+  const [display, setDisplay] = useState(0);
+  const startRef = useRef<number | null>(null);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!enabled || value === undefined || typeof value !== 'number') {
+      setDisplay(value ?? 0);
+      return;
+    }
+    if (skipAnimation) {
+      setDisplay(value);
+      return;
+    }
+    startRef.current = null;
+    const animate = (timestamp: number) => {
+      if (startRef.current === null) startRef.current = timestamp;
+      const elapsed = timestamp - startRef.current;
+      const progress = Math.min(elapsed / COUNT_UP_DURATION_MS, 1);
+      const easeOut = 1 - (1 - progress) * (1 - progress);
+      setDisplay(Math.round(easeOut * value));
+      if (progress < 1) rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [value, enabled, skipAnimation]);
+
+  return display;
+}
 
 interface DashboardStats {
   usersCount: number;
@@ -10,14 +57,19 @@ interface DashboardStats {
 }
 
 const StatisticsCards = () => {
+  const { user } = useAuth();
+  const t = useTranslation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
+  const reduceMotion = useReducedMotion();
 
   const fetchStats = useCallback(async (showLoading = false) => {
+    if (!user) return;
+
     // Cancel previous request if exists
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -30,14 +82,17 @@ const StatisticsCards = () => {
     setError(null);
     
     try {
+      const headers: Record<string, string> = {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      };
+
       const response = await fetch('/api/dashboard/stats', {
-        cache: 'no-store', // Prevent caching
-        signal: abortControllerRef.current.signal, // Add abort signal to prevent race conditions
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-        },
+        credentials: 'include',
+        cache: 'no-store',
+        signal: abortControllerRef.current.signal,
+        headers,
       });
       
       const result = await response.json().catch(() => null);
@@ -74,11 +129,14 @@ const StatisticsCards = () => {
         setLoading(false);
       }
     }
-  }, []);
+  }, [user?.id, user?.role]);
 
   useEffect(() => {
     isMountedRef.current = true;
-    
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     // Initial fetch
     void fetchStats(true);
     
@@ -108,38 +166,33 @@ const StatisticsCards = () => {
       }
       window.removeEventListener('stats-refetch', handleStatsRefetch);
     };
-  }, [fetchStats]);
+  }, [fetchStats, user]);
 
   const formatNumber = (num: number): string => {
     return num.toLocaleString('uz-UZ');
   };
 
+  // Accepted = Qabul qilindi (derived from API counts; backend may add this field later)
+  const acceptedCount = stats
+    ? Math.max(0, stats.totalProjects - stats.activeProjects - stats.rejectedProjects)
+    : 0;
+
+  const showCountUp = !loading && stats != null;
+  const displayUsers = useCountUp(stats?.usersCount, showCountUp, reduceMotion);
+  const displayProjects = useCountUp(stats?.totalProjects, showCountUp, reduceMotion);
+  const displayRejected = useCountUp(stats?.rejectedProjects, showCountUp, reduceMotion);
+  const displayAccepted = useCountUp(acceptedCount, showCountUp, reduceMotion);
+
   const statsData = [
-    {
-      title: "Ro'yxatdan o'tgan foydalanuvchilar",
-      value: stats ? formatNumber(stats.usersCount) : '—',
-      iconIndex: 0,
-    },
-    {
-      title: 'Jami loyihalar',
-      value: stats ? formatNumber(stats.totalProjects) : '—',
-      iconIndex: 1,
-    },
-    {
-      title: 'Faol loyihalar',
-      value: stats ? formatNumber(stats.activeProjects) : '—',
-      iconIndex: 2,
-    },
-    {
-      title: 'Rad etilgan loyihalar',
-      value: stats ? formatNumber(stats.rejectedProjects) : '—',
-      iconIndex: 3,
-    }
+    { titleKey: 'statsCards.totalUsers', value: stats ? formatNumber(displayUsers) : '—', iconIndex: 0 },
+    { titleKey: 'statsCards.totalProjects', value: stats ? formatNumber(displayProjects) : '—', iconIndex: 1 },
+    { titleKey: 'statsCards.rejectedProjects', value: stats ? formatNumber(displayRejected) : '—', iconIndex: 3 },
+    { titleKey: 'statsCards.acceptedProjects', value: stats ? formatNumber(displayAccepted) : '—', iconIndex: 2 },
   ];
 
   return (
-    <div className="stats-container">
-      <h2 className="stats-title">Boshqaruv paneli</h2>
+    <div className="stats-container dashboard-section">
+      <h2 className="stats-title">{t('statsCards.title')}</h2>
       {error && (
         <div className="stats-error">
           <p>{error}</p>
@@ -149,20 +202,14 @@ const StatisticsCards = () => {
         {statsData.map((stat, index) => (
           <div key={index} className="stat-card">
             <div className="stat-content">
-              <h3 className="stat-title">{stat.title}</h3>
+              <h3 className="stat-title">{t(stat.titleKey)}</h3>
               <div className="stat-value">
                 {loading ? (
-                  <div className="stat-loading">Yuklanmoqda...</div>
+                  <div className="stat-loading">{t('common.loading')}</div>
                 ) : (
                   stat.value
                 )}
               </div>
-              {!loading && stats && (
-                <div className="stat-trend">
-                  <span>↑</span>
-                  <span>+12%</span>
-                </div>
-              )}
             </div>
             <div className="stat-icon">
               {stat.iconIndex === 0 && (
@@ -182,8 +229,8 @@ const StatisticsCards = () => {
               )}
               {stat.iconIndex === 2 && (
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
               )}
               {stat.iconIndex === 3 && (

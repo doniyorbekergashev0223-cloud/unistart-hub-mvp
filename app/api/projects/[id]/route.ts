@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getSession } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 
@@ -15,18 +16,6 @@ function jsonError(
     { ok: false, error: { code, message, details } },
     { status }
   )
-}
-
-function parseRole(value: string | null): Role | null {
-  if (value === 'user' || value === 'admin' || value === 'expert') return value
-  return null
-}
-
-function getActor(req: NextRequest): { userId: string; role: Role } | null {
-  const userId = req.headers.get('x-user-id')?.trim()
-  const role = parseRole(req.headers.get('x-user-role'))
-  if (!userId || !role) return null
-  return { userId, role }
 }
 
 const ENUM_TO_STATUS: Record<string, string> = {
@@ -47,10 +36,20 @@ export async function GET(
     )
   }
 
-  const actor = getActor(req)
-  if (!actor) {
+  const session = await getSession(req)
+  if (!session) {
     return jsonError(401, 'UNAUTHORIZED', 'Kirish talab qilinadi.')
   }
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { organizationId: true },
+  })
+  if (!dbUser?.organizationId) {
+    return jsonError(403, 'FORBIDDEN', "Tashkilotga bog'lanmagan. Loyihani ko'rish uchun tashkilot a'zosi bo'lishingiz kerak.")
+  }
+  const orgId = dbUser.organizationId
+  const actor = { userId: session.userId, role: session.role }
 
   const { id } = params
   if (!id) {
@@ -58,8 +57,11 @@ export async function GET(
   }
 
   try {
-    const project = await prisma.project.findUnique({
-      where: { id },
+    const project = await prisma.project.findFirst({
+      where: {
+        id,
+        user: { organizationId: orgId },
+      },
       include: {
         user: {
           select: {

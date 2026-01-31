@@ -6,9 +6,12 @@ export const dynamic = 'force-dynamic'
 
 /**
  * Debug endpoint to check DATABASE_URL configuration
- * This helps diagnose authentication and connection issues
+ * Disabled in production for security.
  */
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return new NextResponse(null, { status: 404 })
+  }
   try {
     const dbUrl = process.env.DATABASE_URL
 

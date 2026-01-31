@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getSession } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 
@@ -12,18 +13,6 @@ function jsonError(status: number, code: string, message: string, details?: unkn
   )
 }
 
-function parseRole(value: string | null): Role | null {
-  if (value === 'user' || value === 'admin' || value === 'expert') return value
-  return null
-}
-
-function getActor(req: NextRequest): { userId: string; role: Role } | null {
-  const userId = req.headers.get('x-user-id')?.trim()
-  const role = parseRole(req.headers.get('x-user-role'))
-  if (!userId || !role) return null
-  return { userId, role }
-}
-
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   if (!prisma) {
     return jsonError(
@@ -33,10 +22,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     )
   }
 
-  const actor = getActor(req)
-  if (!actor) {
+  const session = await getSession(req)
+  if (!session) {
     return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.")
   }
+  const actor = { userId: session.userId, role: session.role }
 
   // Only admin and expert can create reviews
   if (actor.role !== 'admin' && actor.role !== 'expert') {
@@ -79,20 +69,31 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     statusLabel === 'Jarayonda' ? 'JARAYONDA' :
     'RAD_ETILDI'
 
+  const actorUser = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { organizationId: true },
+  })
+  if (!actorUser?.organizationId) {
+    return jsonError(403, 'FORBIDDEN', "Tashkilotga bog'lanmagan.")
+  }
+  const actorOrgId = actorUser.organizationId
+
   try {
-    // Use transaction to ensure data consistency
     await prisma.$transaction(async (tx) => {
-      // Verify project exists and get owner info
       const project = await tx.project.findUnique({
         where: { id },
-        select: { id: true, userId: true, title: true },
+        select: { id: true, userId: true, title: true, user: { select: { organizationId: true } } },
       })
 
       if (!project) {
         throw new Error('PROJECT_NOT_FOUND')
       }
 
-      // Create comment instead of review (ProjectReview model doesn't exist in schema)
+      const projectOrgId = project.user?.organizationId ?? null
+      if (projectOrgId !== actorOrgId) {
+        throw new Error('FORBIDDEN_ORG')
+      }
+
       await tx.projectComment.create({
         data: {
           projectId: id,
@@ -101,24 +102,40 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         },
       })
 
-      // Update project status to the latest review status
       await tx.project.update({
         where: { id },
         data: { status: statusEnum as any },
       })
 
-      // Create notification for project owner
-      const statusLabels: Record<string, string> = {
-        QABUL_QILINDI: 'Qabul qilindi',
-        JARAYONDA: 'Jarayonda',
-        RAD_ETILDI: 'Rad etildi',
+      // SECURITY: Only the project owner (project.userId) receives this notification. No one else.
+      // Organization already verified: projectOrgId === actorOrgId.
+      const ownerOrgId = project.user?.organizationId ?? null
+      if (ownerOrgId !== actorOrgId) {
+        throw new Error('FORBIDDEN_ORG')
+      }
+      const recipientUserId = project.userId
+      if (!recipientUserId) {
+        throw new Error('PROJECT_OWNER_MISSING')
+      }
+
+      let notifTitle: string
+      let notifMessage: string
+      if (statusEnum === 'QABUL_QILINDI') {
+        notifTitle = 'Loyiha qabul qilindi'
+        notifMessage = "Loyihangiz qabul qilindi 🎉"
+      } else if (statusEnum === 'RAD_ETILDI') {
+        notifTitle = 'Loyiha rad etildi'
+        notifMessage = "Loyihangiz rad etildi."
+      } else {
+        notifTitle = "Loyihangiz ko'rib chiqildi"
+        notifMessage = `Loyihangiz "${project.title}" holati 'Jarayonda' ga o'zgartirildi.`
       }
 
       await tx.notification.create({
         data: {
-          userId: project.userId,
-          title: "Loyihangiz ko'rib chiqildi",
-          message: `Loyihangiz "${project.title}" holati '${statusLabels[statusEnum]}' ga o'zgartirildi.`,
+          userId: recipientUserId,
+          title: notifTitle,
+          message: notifMessage,
         },
       })
     })
@@ -127,6 +144,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   } catch (error: any) {
     if (error.message === 'PROJECT_NOT_FOUND') {
       return jsonError(404, 'PROJECT_NOT_FOUND', 'Loyiha topilmadi.')
+    }
+    if (error.message === 'FORBIDDEN_ORG') {
+      return jsonError(403, 'FORBIDDEN', "Boshqa tashkilot loyihasini ko'rib chiqish mumkin emas.")
     }
     
     // Database connection errors

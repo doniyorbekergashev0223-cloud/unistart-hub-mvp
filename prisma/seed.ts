@@ -2,8 +2,27 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+/** Ro'yxatdan o'tishda tanlanadigan tashkilotlar (talaba: universitetlar, talaba emas: yoshlar agentligi) */
+const REGISTRATION_ORGANIZATIONS = [
+  { slug: 'sambhram', name: 'Sambhram Universiteti', logoUrl: '/sambhram.png' },
+  { slug: 'kazan', name: 'Kazan Universiteti', logoUrl: '/kazan.png' },
+  { slug: 'uzmu-jizzakh', name: "O'zbekiston Milliy Universiteti (Jizzax filiali)", logoUrl: '/uzmu-jizzakh.png' },
+  { slug: 'jizzakh-pedagogical', name: 'Jizzax Pedagogika Universiteti', logoUrl: '/jizzakh-pedagogika.png' },
+  { slug: 'jizzakh-polytechnic', name: 'Jizzax Politexnika Universiteti', logoUrl: '/jizzakh-politexnika.png' },
+  { slug: 'youth-agency', name: 'Yoshlar ishlari agentligi', logoUrl: '/youth-agency.png' },
+]
+
 async function main() {
   console.log('Seeding database...')
+
+  for (const org of REGISTRATION_ORGANIZATIONS) {
+    await prisma.organization.upsert({
+      where: { slug: org.slug },
+      update: { name: org.name, logoUrl: org.logoUrl },
+      create: { name: org.name, slug: org.slug, logoUrl: org.logoUrl },
+    })
+  }
+  console.log('Upserted organizations:', REGISTRATION_ORGANIZATIONS.length)
 
   // Create initial invite codes
   // Admin invite code

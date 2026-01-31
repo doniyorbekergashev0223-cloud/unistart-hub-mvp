@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -11,8 +12,8 @@ function jsonError(status: number, code: string, message: string, details?: unkn
 
 // Get notification preferences
 export async function GET(req: Request) {
-  const userId = req.headers.get('x-user-id');
-  if (!userId) {
+  const session = await getSession(req);
+  if (!session) {
     return jsonError(401, 'UNAUTHORIZED', 'Kirish talab qilinadi.');
   }
 
@@ -35,8 +36,8 @@ export async function GET(req: Request) {
 
 // Update notification preferences
 export async function PATCH(req: Request) {
-  const userId = req.headers.get('x-user-id');
-  if (!userId) {
+  const session = await getSession(req);
+  if (!session) {
     return jsonError(401, 'UNAUTHORIZED', 'Kirish talab qilinadi.');
   }
 

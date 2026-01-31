@@ -62,10 +62,7 @@ export default function ProjectDetailPage() {
       setError(null)
       try {
         const response = await fetch(`/api/projects/${projectId}`, {
-          headers: {
-            'x-user-id': user.id,
-            'x-user-role': user.role,
-          },
+          credentials: 'include',
         })
 
         if (response.ok) {
@@ -113,9 +110,8 @@ export default function ProjectDetailPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user.id,
-          'x-user-role': user.role,
         },
+        credentials: 'include',
         body: JSON.stringify(reviewForm),
       })
 
@@ -182,7 +178,7 @@ export default function ProjectDetailPage() {
         <Sidebar />
         <div className="dashboard-main">
           <Topbar />
-          <div className="dashboard-content">
+          <div id="main" className="dashboard-content">
             {loading && (
               <div style={{ textAlign: 'center', padding: '2rem' }}>
                 <p>Yuklanmoqda...</p>

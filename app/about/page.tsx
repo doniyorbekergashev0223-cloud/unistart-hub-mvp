@@ -12,13 +12,13 @@ export default function AboutPage() {
         <Sidebar />
         <div className="dashboard-main">
           <Topbar />
-          <div className="dashboard-content">
+          <div id="main" className="dashboard-content">
             <div className="about-page">
               {/* Hero Section */}
               <div className="about-hero">
                 <h1 className="about-title">UniStart Hub — innovatsion startap platformasi</h1>
                 <p className="about-intro">
-                  UniStart Hub — bu oliy ta'lim muassasalarida ta'lim olayotgan iqtidorli talabalar hamda chekka qishloqlarda yashovchi uyushmagan yoshlarning innovatsion startap tashabbuslarini aniqlash, rivojlantirish va ularni MVP darajasidagi real raqamli mahsulotlarga aylantirishga qaratilgan markazlashtirilgan raqamli platformadir.
+                  UniStart Hub — bu oliy ta'lim muassasalarida ta'lim olayotgan iqtidorli talabalar, Texnikum va maktablardagi iqtidorli o'quvchilar hamda chekka qishloqlarda yashovchi uyushmagan yoshlarning innovatsion startap tashabbuslarini aniqlash, rivojlantirish va ularni MVP darajasidagi real raqamli mahsulotlarga aylantirishga qaratilgan markazlashtirilgan raqamli platformadir.
                 </p>
                 <p className="about-intro">
                   Loyiha yoshlarning salohiyatini yuzaga chiqarish, teng imkoniyatlar yaratish va innovatsion ekotizimni kengaytirishni maqsad qilgan.
@@ -101,9 +101,9 @@ export default function AboutPage() {
                       </svg>
                     </div>
                     <div className="about-list-content">
-                      <h3 className="about-list-title">Universitet talabalari</h3>
+                      <h3 className="about-list-title">Universitet talabalari, Texnikum va maktab o'quvchilari</h3>
                       <p className="about-list-description">
-                        Oliy ta'lim muassasalarida ta'lim olayotgan iqtidorli talabalar.
+                        Oliy ta'lim muassasalarida ta'lim olayotgan iqtidorli talabalar, Texnikum va maktablardagi iqtidorli o'quvchilar.
                       </p>
                     </div>
                   </div>

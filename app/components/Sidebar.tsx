@@ -4,10 +4,12 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from '../context/LocaleContext';
 import '../styles/Sidebar.css';
 
 const Sidebar = () => {
   const { user, isAuthenticated } = useAuth();
+  const t = useTranslation();
   const pathname = usePathname();
 
   // Close sidebar on mobile when route changes
@@ -22,12 +24,12 @@ const Sidebar = () => {
   }, [pathname]);
 
   const items = [
-    { label: 'Boshqaruv paneli', href: '/' },
-    { label: 'Loyiha haqida', href: '/about' },
-    { label: 'Loyihalar', href: '/projects' },
-    { label: 'Developers', href: '/developers' },
-    { label: 'Yordam', href: '/help' },
-  ] as const;
+    { label: t('nav.dashboard'), href: '/dashboard' },
+    { label: t('nav.about'), href: '/about' },
+    { label: t('nav.projects'), href: '/projects' },
+    { label: t('nav.developers'), href: '/developers' },
+    { label: t('nav.help'), href: '/help' },
+  ];
 
   // Role-based visibility is kept (currently all provided items are visible for all roles).
   // If admin-only items are added later, they should be filtered here.
@@ -48,20 +50,20 @@ const Sidebar = () => {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <Link href="/" className="logo" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/dashboard" className="logo" style={{ textDecoration: 'none', color: 'inherit' }}>
           UniStart <span className="logo-orange">Hub</span>
         </Link>
       </div>
 
       <div className="sidebar-content">
         <Link href="/submit" className="primary-button-link">
-          <span className="primary-button">Loyiha yuborish</span>
+          <span className="primary-button">{t('nav.submitProject')}</span>
         </Link>
 
         <nav className="sidebar-nav">
           <ul>
             {visibleItems.map((item) => (
-              <li key={item.label} className={isActive(item.href) ? 'active' : ''}>
+              <li key={item.href} className={isActive(item.href) ? 'active' : ''}>
                 <Link href={item.href}>{item.label}</Link>
               </li>
             ))}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 
 interface Project {
@@ -15,6 +15,7 @@ interface ProjectsContextType {
   projects: Project[];
   searchQuery: string;
   isSearching: boolean;
+  isLoading: boolean;
   addProject: (project: Project) => void;
   searchProjects: (query: string) => Promise<void>;
   clearSearch: () => void;
@@ -47,26 +48,25 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) 
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     if (!isAuthenticated || !user) {
       setProjects([]);
+      setIsLoading(false);
       return;
     }
 
+    setIsLoading(true);
     try {
       const res = await fetch('/api/projects', {
         method: 'GET',
-        headers: {
-          'x-user-id': user.id,
-          'x-user-role': user.role,
-        },
-        cache: 'no-store', // Prevent caching
+        credentials: 'include',
+        cache: 'no-store',
       });
 
       if (!res.ok) {
         console.error('Failed to load projects:', res.status, res.statusText);
-        // Keep existing projects on error
         return;
       }
 
@@ -92,27 +92,27 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) 
       setProjects(mapped);
     } catch (error) {
       console.error('Network error loading projects:', error);
-      // Keep existing projects on network error
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
       setProjects([]);
       setSearchQuery('');
       setIsSearching(false);
+      setIsLoading(false);
       return;
     }
     void loadProjects();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, user?.id, user?.role]);
+  }, [isAuthenticated, user?.id, user?.role, loadProjects]);
 
-  const searchProjects = async (query: string) => {
+  const searchProjects = useCallback(async (query: string) => {
     if (!isAuthenticated || !user) return;
 
     setSearchQuery(query);
-    
-    // If query is empty, load normal projects
+
     if (!query.trim()) {
       setIsSearching(false);
       await loadProjects();
@@ -121,13 +121,17 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) 
 
     setIsSearching(true);
     try {
-      const res = await fetch(`/api/projects/search?q=${encodeURIComponent(query)}`, {
+      const searchParam = encodeURIComponent(query.trim());
+      const res = await fetch(`/api/projects?search=${searchParam}`, {
         method: 'GET',
-        headers: {
-          'x-user-id': user.id,
-          'x-user-role': user.role,
-        },
+        credentials: 'include',
+        cache: 'no-store',
       });
+
+      if (!res.ok) {
+        console.error('Search failed:', res.status, res.statusText);
+        return;
+      }
 
       const json = (await res.json().catch(() => null)) as unknown;
       if (!isApiResponse<{ projects: Array<{ id: string; title: string; status: string; createdAt: string; user: { name: string } }> }>(json)) {
@@ -138,7 +142,7 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) 
         return;
       }
 
-      const mapped: Project[] = json.data.projects.map((p) => ({
+      const mapped: Project[] = (json.data.projects || []).map((p) => ({
         id: p.id,
         name: p.title,
         user: p.user?.name ?? '—',
@@ -152,90 +156,22 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({ children }) 
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [isAuthenticated, user, loadProjects]);
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchQuery('');
     setIsSearching(false);
     void loadProjects();
-  };
+  }, [loadProjects]);
 
   const addProject = (project: Project) => {
-    // Real API (safe migration): POST /api/projects, keyin GET bilan ro'yxatni yangilaymiz.
-    // Eslatma: hozirgi UI `addProject()` ga description/contact uzatmaydi,
-    // shuning uchun vaqtincha DOM dan o'qishga harakat qilamiz (keyingi bosqichda UI → API bevosita bo'ladi).
-    void (async () => {
-      if (!isAuthenticated || !user) {
-        setProjects(prevProjects => [project, ...prevProjects]);
-        return;
-      }
-
-      const title = project.name?.trim?.() ? project.name : '—';
-
-      // Real submit uchun description/contact ProjectForm tomonidan yuboriladi.
-      // (UI o'zgarmaydi, faqat payload to'liq bo'ladi.)
-      const extra = project as unknown as { description?: unknown; contact?: unknown };
-      let description = typeof extra.description === 'string' ? extra.description.trim() : '';
-      let contact = typeof extra.contact === 'string' ? extra.contact.trim() : '';
-
-      // Legacy safety: agar eski payload kelib qolsa, DOM dan o'qib ko'ramiz.
-      if (!description || !contact) {
-        try {
-          const descEl = document.getElementById('description') as HTMLTextAreaElement | null;
-          const contactEl = document.getElementById('contact') as HTMLInputElement | null;
-          description = description || descEl?.value?.trim?.() || '';
-          contact = contact || contactEl?.value?.trim?.() || '';
-        } catch {
-          // ignore
-        }
-      }
-
-      // API validatsiyasidan o'tish uchun minimal qiymatlar (UI regressiya bo'lmasin)
-      if (!description) description = "—";
-      if (!contact) contact = "—";
-
-      try {
-        const res = await fetch('/api/projects', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-id': user.id,
-            'x-user-role': user.role,
-          },
-          body: JSON.stringify({
-            title,
-            description,
-            contact,
-            status: project.status || 'Jarayonda',
-          }),
-        });
-
-        const json = (await res.json().catch(() => null)) as unknown;
-        if (!isApiResponse<{ project: { id: string } }>(json)) {
-          // Fallback: UI ishlashda davom etsin
-          setProjects(prevProjects => [project, ...prevProjects]);
-          return;
-        }
-
-        if (!json.ok) {
-          // DATABASE_URL yo'q bo'lsa yoki boshqa xatolik bo'lsa ham UI crash bo'lmasin
-          setProjects(prevProjects => [project, ...prevProjects]);
-          return;
-        }
-
-        // Real DB dan yangilab olamiz
-        await loadProjects();
-        
-        // Trigger stats refetch event for real-time statistics update
-        window.dispatchEvent(new CustomEvent('stats-refetch'));
-      } catch {
-        setProjects(prevProjects => [project, ...prevProjects]);
-      }
-    })();
+    // Client-side only: assume project allaqachon API orqali yaratilgan
+    // va bu yerda faqat lokal ro'yxatni yangilaymiz.
+    setProjects(prevProjects => [project, ...prevProjects]);
   };
 
   return (
-    <ProjectsContext.Provider value={{ projects, searchQuery, isSearching, addProject, searchProjects, clearSearch }}>
+    <ProjectsContext.Provider value={{ projects, searchQuery, isSearching, isLoading, addProject, searchProjects, clearSearch }}>
       {children}
     </ProjectsContext.Provider>
   );

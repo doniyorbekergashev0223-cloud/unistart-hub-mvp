@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getSession } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -19,18 +20,6 @@ function jsonError(status: number, code: string, message: string, details?: unkn
   );
 }
 
-function parseRole(value: string | null): Role | null {
-  if (value === 'user' || value === 'admin' || value === 'expert') return value;
-  return null;
-}
-
-function getActor(req: Request): { userId: string; role: Role } | null {
-  const userId = req.headers.get('x-user-id')?.trim();
-  const role = parseRole(req.headers.get('x-user-role'));
-  if (!userId || !role) return null;
-  return { userId, role };
-}
-
 export async function GET(req: Request) {
   if (!prisma) {
     return jsonError(
@@ -40,10 +29,11 @@ export async function GET(req: Request) {
     );
   }
 
-  const actor = getActor(req);
-  if (!actor) {
-    return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi (x-user-id va x-user-role headerlari yo'q).");
+  const session = await getSession(req);
+  if (!session) {
+    return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.");
   }
+  const actor = { userId: session.userId, role: session.role };
 
   // Get search query from URL
   const url = new URL(req.url);

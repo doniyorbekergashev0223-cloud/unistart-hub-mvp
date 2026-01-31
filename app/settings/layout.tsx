@@ -27,7 +27,7 @@ export default function SettingsLayout({
         <Sidebar />
         <div className="dashboard-main">
           <Topbar />
-          <div className="dashboard-content">
+          <div id="main" className="dashboard-content">
             <div className="settings-layout">
               <h1 className="settings-layout-title">Sozlamalar</h1>
               

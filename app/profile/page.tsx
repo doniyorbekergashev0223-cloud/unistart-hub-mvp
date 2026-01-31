@@ -35,7 +35,7 @@ export default function ProfilePage() {
         <Sidebar />
         <div className="dashboard-main">
           <Topbar />
-          <div className="dashboard-content">
+          <div id="main" className="dashboard-content">
             <div className="profile-page">
               <h1 className="profile-page-title">Shaxsiy ma'lumotlar</h1>
               

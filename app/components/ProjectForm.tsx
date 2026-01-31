@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '../context/ProjectsContext';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from '../context/LocaleContext';
 import { supabase } from '@/lib/supabase';
 
 interface FormData {
@@ -17,6 +18,7 @@ const ProjectForm = () => {
   const router = useRouter();
   const { addProject } = useProjects();
   const { user } = useAuth();
+  const t = useTranslation();
   const [formData, setFormData] = useState<FormData>({
     projectName: '',
     description: '',
@@ -25,105 +27,103 @@ const ProjectForm = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
 
     if (!formData.projectName.trim()) {
-      newErrors.projectName = 'Loyiha nomi majburiy';
+      newErrors.projectName = t('projectForm.projectNameRequired');
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = "G'oya tavsifi majburiy";
+      newErrors.description = t('projectForm.descriptionRequired');
     }
 
     if (!formData.contact.trim()) {
-      newErrors.contact = "Aloqa ma'lumotlari majburiy";
+      newErrors.contact = t('projectForm.contactRequired');
     } else if (!formData.contact.includes('@') && !formData.contact.match(/^\+?[\d\s\-\(\)]+$/)) {
-      newErrors.contact = 'To\'g\'ri email yoki telefon raqam kiriting';
+      newErrors.contact = t('projectForm.contactInvalid');
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  const uploadProjectFileToSupabase = async (file: File, userId: string): Promise<string> => {
+    const ext = file.name.split('.').pop() || 'dat';
+    const uniqueName = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { data, error } = await supabase.storage
+      .from('project-files')
+      .upload(uniqueName, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (error) {
+      console.error('Supabase Storage upload error:', error);
+      throw new Error(
+        "Faylni Supabase Storage'ga yuklashda xatolik yuz berdi. Iltimos, qayta urinib ko'ring yoki faylsiz yuboring."
+      );
+    }
+
+    const { data: publicData } = supabase.storage
+      .from('project-files')
+      .getPublicUrl(uniqueName);
+
+    if (!publicData?.publicUrl) {
+      throw new Error("Fayl URL ni olishda xatolik yuz berdi.");
+    }
+
+    return publicData.publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    // Hard submission lock to prevent double submits (click, Enter, mobile tap, etc.)
+    if (isSubmittingRef.current || isSubmitting) {
       return;
     }
-
-    if (!user) {
-      alert('Iltimos, avval tizimga kiring.');
-      router.push('/auth/login');
-      return;
-    }
-
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
 
     try {
-      // Debug: Console'da user ma'lumotlarini ko'rsatish
-      console.log('🔍 Project Submission Debug:');
-      console.log('User:', user);
-      console.log('User ID:', user?.id);
-      console.log('User Role:', user?.role);
-      
-      if (!user?.id || !user?.role) {
-        alert('Foydalanuvchi ma\'lumotlari topilmadi. Iltimos, qayta tizimga kiring.');
-        router.push('/auth/login');
+      // Step 1: Validate input
+      if (!validateForm()) {
+        isSubmittingRef.current = false;
         setIsSubmitting(false);
         return;
       }
 
-      // 1) Faylni to'g'ridan-to'g'ri Supabase Storage'ga yuklash (Vercel body size limitini chetlab o'tish uchun)
-      let fileUrl: string | undefined;
-
-      if (selectedFile) {
-        try {
-          const ext = selectedFile.name.split('.').pop() || 'dat';
-          const uniqueName = `${user.id}/${Date.now()}-${Math.random()
-            .toString(36)
-            .slice(2)}.${ext}`;
-
-          const { data, error } = await supabase.storage
-            .from('project-files')
-            .upload(uniqueName, selectedFile, {
-              cacheControl: '3600',
-              upsert: false,
-            });
-
-          if (error) {
-            console.error('Client-side file upload error:', error);
-            throw error;
-          }
-
-          const { data: publicData } = supabase.storage
-            .from('project-files')
-            .getPublicUrl(uniqueName);
-
-          if (publicData?.publicUrl) {
-            fileUrl = publicData.publicUrl;
-          } else {
-            throw new Error('Fayl URL ni olishda xatolik');
-          }
-        } catch (uploadError) {
-          console.error('Supabase file upload failed:', uploadError);
-          alert(
-            "Faylni Supabase Storage'ga yuklashda xatolik yuz berdi. Iltimos, qayta urinib ko'ring yoki faylsiz yuboring."
-          );
-        }
+      if (!user) {
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
+        alert(t('projectForm.pleaseLogin'));
+        router.push('/auth/login');
+        return;
       }
 
-      // 2) Endi faqat metadata (va fileUrl) ni API ga JSON orqali yuboramiz
+      if (!user.id || !user.role) {
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
+        alert("Foydalanuvchi ma'lumotlari topilmadi. Iltimos, qayta tizimga kiring.");
+        router.push('/auth/login');
+        return;
+      }
+
+      // Step 3: Upload file to Supabase Storage (if any)
+      let fileUrl: string | undefined;
+      if (selectedFile) {
+        fileUrl = await uploadProjectFileToSupabase(selectedFile, user.id);
+      }
+
+      // Step 4: Create project record in database
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'x-user-id': user.id,
-        'x-user-role': user.role,
       };
-
-      // Debug: Console'da headerlarni ko'rsatish
-      console.log('📤 Request Headers:', headers);
 
       const payload = {
         title: formData.projectName.trim(),
@@ -132,73 +132,59 @@ const ProjectForm = () => {
         fileUrl,
       };
 
-      // Submit to API with authentication headers (JSON)
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers,
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
 
-      // Debug: Response'ni ko'rsatish
-      console.log('📥 Response Status:', response.status);
-      console.log('📥 Response OK:', response.ok);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error?.message || 'Loyiha yuborishda xatolik yuz berdi';
-        
-        // Show more specific error messages
-        if (errorData.error?.code === 'DATABASE_CONNECTION_LIMIT' || 
-            errorData.error?.code === 'DATABASE_TENANT_ERROR') {
-          alert(`Xatolik: ${errorMessage}\n\nIltimos, Vercel logs'ni tekshiring va CRITICAL_DATABASE_FIX.md faylini ko'ring.`);
-        } else if (errorData.error?.code === 'UNAUTHORIZED') {
-          alert('Kirish talab qilinadi. Iltimos, qayta tizimga kiring.');
-          router.push('/auth/login');
-          return;
-        } else {
-          alert(`Xatolik: ${errorMessage}`);
-        }
-        
+        const errorMessage =
+          errorData?.error?.message || "Loyiha yuborishda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.";
         throw new Error(errorMessage);
       }
 
       const result = await response.json();
 
-      // Update local context with the returned project data
       const projectForContext = {
         id: result.data.project.id,
         name: result.data.project.title,
-        user: result.data.project.user?.name || 'Anonim foydalanuvchi',
+        user: result.data.project.user?.name || t('common.user'),
         date: new Date(result.data.project.createdAt).toISOString().split('T')[0],
         status: result.data.project.status,
       };
 
       addProject(projectForContext);
-
-      // Trigger stats refetch event for real-time statistics update
       window.dispatchEvent(new CustomEvent('stats-refetch'));
+      window.dispatchEvent(new CustomEvent('notifications-refetch'));
 
-      // Reset form
       setFormData({
         projectName: '',
         description: '',
-        contact: ''
+        contact: '',
       });
       setSelectedFile(null);
 
-      // Clear file input
-      const fileInput = document.getElementById('projectFile') as HTMLInputElement;
+      const fileInput = document.getElementById('projectFile') as HTMLInputElement | null;
       if (fileInput) {
         fileInput.value = '';
       }
 
-      // Navigate back to dashboard
-      router.push('/');
+      setSubmitSuccess(true);
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
     } catch (error) {
-      console.error('Submission error:', error);
-      // In a real app, you might want to show a toast notification here
-      alert(error instanceof Error ? error.message : 'Loyiha yuborishda xatolik yuz berdi');
+      console.error('Project submission error:', error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : t('projectForm.submitError');
+      alert(message);
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -227,13 +213,13 @@ const ProjectForm = () => {
       const maxSize = 10 * 1024 * 1024; // 10MB
 
       if (!allowedTypes.includes(file.type)) {
-        alert('Faqat PDF, DOC, DOCX, PPT, PPTX yoki ZIP fayllar qabul qilinadi.');
+        alert(t('projectForm.fileTypesAllowed'));
         e.target.value = '';
         return;
       }
 
       if (file.size > maxSize) {
-        alert('Fayl hajmi 10MB dan oshmasligi kerak.');
+        alert(t('projectForm.fileSizeMax'));
         e.target.value = '';
         return;
       }
@@ -244,12 +230,23 @@ const ProjectForm = () => {
     }
   };
 
+  if (submitSuccess) {
+    return (
+      <div className="project-form-container project-form-success" role="status" aria-live="polite">
+        <div className="project-form-success-message">
+          <p>{t('projectForm.success')}</p>
+          <p className="project-form-success-hint">{t('projectForm.successHint')}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="project-form-container">
       <form onSubmit={handleSubmit} className="project-form">
         <div className="form-group">
           <label htmlFor="projectName" className="form-label">
-            Loyiha nomi *
+            {t('projectForm.projectName')} *
           </label>
           <input
             type="text"
@@ -258,14 +255,14 @@ const ProjectForm = () => {
             value={formData.projectName}
             onChange={handleChange}
             className={`form-input ${errors.projectName ? 'error' : ''}`}
-            placeholder="Loyihangiz nomini kiriting"
+            placeholder={t('projectForm.projectNamePlaceholder')}
           />
           {errors.projectName && <span className="error-message">{errors.projectName}</span>}
         </div>
 
         <div className="form-group">
           <label htmlFor="description" className="form-label">
-            G'oya tavsifi *
+            {t('projectForm.description')} *
           </label>
           <textarea
             id="description"
@@ -273,7 +270,7 @@ const ProjectForm = () => {
             value={formData.description}
             onChange={handleChange}
             className={`form-textarea ${errors.description ? 'error' : ''}`}
-            placeholder="Startap g'oyangizni batafsil tavsiflang"
+            placeholder={t('projectForm.descriptionPlaceholder')}
             rows={6}
           />
           {errors.description && <span className="error-message">{errors.description}</span>}
@@ -281,7 +278,7 @@ const ProjectForm = () => {
 
         <div className="form-group">
           <label htmlFor="contact" className="form-label">
-            Aloqa ma'lumotlari *
+            {t('projectForm.contact')} *
           </label>
           <input
             type="text"
@@ -290,14 +287,14 @@ const ProjectForm = () => {
             value={formData.contact}
             onChange={handleChange}
             className={`form-input ${errors.contact ? 'error' : ''}`}
-            placeholder="Email yoki telefon raqamingiz"
+            placeholder={t('projectForm.contactPlaceholder')}
           />
           {errors.contact && <span className="error-message">{errors.contact}</span>}
         </div>
 
         <div className="form-group">
           <label htmlFor="projectFile" className="form-label">
-            Loyiha fayli (ixtiyoriy)
+            {t('projectForm.file')}
           </label>
           <input
             type="file"
@@ -308,17 +305,17 @@ const ProjectForm = () => {
             className="form-file-input"
           />
           <small className="form-help">
-            PDF, DOC, DOCX, PPT, PPTX yoki ZIP fayllar. Maksimal hajm: 10MB
+            {t('projectForm.fileHelp')}
           </small>
           {selectedFile && (
             <div className="file-info">
-              Tanlangan fayl: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(1)}MB)
+              {t('projectForm.selectedFile')}: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(1)}MB)
             </div>
           )}
         </div>
 
         <button type="submit" className="submit-button" disabled={isSubmitting}>
-          {isSubmitting ? 'Yuborilmoqda...' : 'Yuborish'}
+          {isSubmitting ? t('projectForm.submitting') : t('projectForm.submit')}
         </button>
       </form>
     </div>

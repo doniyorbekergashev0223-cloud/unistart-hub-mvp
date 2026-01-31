@@ -16,13 +16,13 @@ export async function OPTIONS(req: Request) {
 }
 
 /**
- * Test endpoint for email sending.
- * This helps debug SMTP configuration issues.
- * 
- * Usage: POST /api/test-email
- * Body: { "email": "your-email@example.com" }
+ * Test endpoint for email sending (development only).
+ * Disabled in production for security.
  */
 export async function POST(req: Request) {
+  if (process.env.NODE_ENV === 'production') {
+    return new NextResponse(null, { status: 404 })
+  }
   try {
     const body = await req.json().catch(() => null) as null | {
       email?: unknown

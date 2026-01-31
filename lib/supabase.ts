@@ -1,13 +1,27 @@
 import { createClient } from '@supabase/supabase-js'
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
+function isAnonKeyLikelyValid(key: string): boolean {
+  if (!key || typeof key !== 'string') return false
+  const trimmed = key.trim()
+  if (!trimmed) return false
+  return trimmed.split('.').length >= 3
+}
+
+if (typeof window !== 'undefined' && (!SUPABASE_URL || !isAnonKeyLikelyValid(SUPABASE_ANON_KEY))) {
+  console.warn(
+    '[Supabase] NEXT_PUBLIC_SUPABASE_URL yoki NEXT_PUBLIC_SUPABASE_ANON_KEY .env da yo\'q yoki noto\'g\'ri. ' +
+      'Storage yuklash ishlamaydi. Supabase Dashboard → Settings → API dan anon key ni nusxalang.'
+  )
+}
+
 /**
  * Supabase client (public access uchun)
  * Server va client tarafda ishlaydi.
  */
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 /**
  * Supabase client (service role - admin access)
@@ -34,12 +48,12 @@ export async function uploadProjectFile(file: File, userId: string): Promise<str
   const fileExt = file.name.split('.').pop()
   const fileName = `${userId}_${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`
 
-  // Upload to Supabase Storage
+  // Upload to Supabase Storage (upsert: true so duplicate path on retry overwrites instead of failing)
   const { data, error } = await supabaseAdmin.storage
     .from('project-files')
     .upload(fileName, file, {
       cacheControl: '3600',
-      upsert: false
+      upsert: true
     })
 
   if (error) {

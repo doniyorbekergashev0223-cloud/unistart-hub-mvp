@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { uploadAvatar } from '@/lib/supabase';
+import { getSession } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -17,10 +18,11 @@ export async function GET(req: Request) {
     return jsonError(503, 'DATABASE_NOT_CONFIGURED', "Ma'lumotlar bazasi sozlanmagan.");
   }
 
-  const userId = req.headers.get('x-user-id');
-  if (!userId) {
+  const session = await getSession(req);
+  if (!session) {
     return jsonError(401, 'UNAUTHORIZED', 'Kirish talab qilinadi.');
   }
+  const userId = session.userId;
 
   try {
     const user = await prisma.user.findUnique({
@@ -75,10 +77,11 @@ export async function PATCH(req: Request) {
     return jsonError(503, 'DATABASE_NOT_CONFIGURED', "Ma'lumotlar bazasi sozlanmagan.");
   }
 
-  const userId = req.headers.get('x-user-id');
-  if (!userId) {
+  const session = await getSession(req);
+  if (!session) {
     return jsonError(401, 'UNAUTHORIZED', 'Kirish talab qilinadi.');
   }
+  const userId = session.userId;
 
   try {
     const formData = await req.formData();

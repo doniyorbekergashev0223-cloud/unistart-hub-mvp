@@ -4,6 +4,17 @@ This document describes all required and optional environment variables for UniS
 
 ## Required Variables
 
+### Authentication (JWT)
+
+```env
+JWT_SECRET="your-secret-at-least-16-chars"
+```
+
+**Important:**
+- Used for signing session cookies (login). Must be at least 16 characters.
+- Generate a strong random string (e.g. `openssl rand -base64 32`).
+- Never commit this value; set it only in Vercel Environment Variables.
+
 ### Database (Supabase PostgreSQL)
 
 ```env
@@ -114,5 +125,6 @@ SMTP_PASS="your-app-password"
 
 # Application
 APP_URL="https://unistart-hub.vercel.app"
+JWT_SECRET="your-long-random-secret-at-least-16-characters"
 NODE_ENV="production"
 ```

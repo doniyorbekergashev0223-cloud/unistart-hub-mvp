@@ -26,10 +26,7 @@ export default function ProfileSettingsPage() {
     setLoading(true);
     try {
       const response = await fetch('/api/settings/profile', {
-        headers: {
-          'x-user-id': user.id,
-          'x-user-role': user.role,
-        },
+        credentials: 'include',
       });
 
       const result = await response.json();
@@ -96,10 +93,7 @@ export default function ProfileSettingsPage() {
 
       const response = await fetch('/api/settings/profile', {
         method: 'PATCH',
-        headers: {
-          'x-user-id': user.id,
-          'x-user-role': user.role,
-        },
+        credentials: 'include',
         body: formData,
       });
 

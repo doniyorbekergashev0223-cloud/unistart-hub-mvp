@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { verifyPassword } from '@/lib/security'
+import { createSessionToken, AUTH_COOKIE_NAME, AUTH_COOKIE_OPTIONS } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 
@@ -128,12 +129,21 @@ export async function POST(req: Request) {
 
     if (!(await verifyPassword(password, user.passwordHash))) {
       return jsonError(401, 'INVALID_CREDENTIALS', "Email yoki parol noto'g'ri.")
-
     }
 
     const { passwordHash, ...safeUser } = user
-
-    return NextResponse.json({ ok: true, data: { user: safeUser } })
+    let token: string
+    try {
+      token = await createSessionToken({ userId: user.id, role: user.role })
+    } catch (authErr: any) {
+      if (authErr?.message?.includes('JWT_SECRET')) {
+        return jsonError(503, 'AUTH_NOT_CONFIGURED', "JWT_SECRET sozlanmagan. Server sessiyasini ishlatish uchun .env da JWT_SECRET qo'shing.")
+      }
+      throw authErr
+    }
+    const res = NextResponse.json({ ok: true, data: { user: safeUser } })
+    res.cookies.set(AUTH_COOKIE_NAME, token, AUTH_COOKIE_OPTIONS)
+    return res
   } catch (error) {
     console.error('Login error:', error)
     console.error('Error details:', error instanceof Error ? error.message : String(error))

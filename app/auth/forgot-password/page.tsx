@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from '../../context/LocaleContext';
 
 const ForgotPasswordPage = () => {
+  const t = useTranslation();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -13,12 +15,12 @@ const ForgotPasswordPage = () => {
     e.preventDefault();
 
     if (!email.trim()) {
-      setError('Email majburiy');
+      setError(t('auth.emailRequired'));
       return;
     }
 
     if (!email.includes('@')) {
-      setError("To'g'ri email kiriting");
+      setError(t('auth.emailInvalid'));
       return;
     }
 
@@ -39,10 +41,10 @@ const ForgotPasswordPage = () => {
       if (result.ok) {
         setIsSuccess(true);
       } else {
-        setError(result.error?.message || 'Xatolik yuz berdi');
+        setError(result.error?.message || t('common.error'));
       }
     } catch (err) {
-      setError('Tarmoq xatoligi. Iltimos, qayta urinib ko\'ring.');
+      setError(t('auth.networkError'));
     } finally {
       setIsLoading(false);
     }
@@ -53,22 +55,19 @@ const ForgotPasswordPage = () => {
       <div className="auth-page">
         <div className="auth-container">
           <div className="auth-header">
-            <h1>UniStart <span className="logo-orange">Hub</span></h1>
-            <h2>Kod yuborildi</h2>
-            <p>Email manzilingizga tasdiqlash kodi yuborildi</p>
+            <h1>{t('public.heroTitle')} <span className="logo-orange">Hub</span></h1>
+            <h2>{t('auth.codeSent')}</h2>
+            <p>{t('auth.codeSentSubtitle')}</p>
           </div>
 
           <div className="success-message">
             <div className="success-icon">✓</div>
-            <p>Tasdiqlash kodi muvaffaqiyatli yuborildi. Iltimos, email xabaringizni tekshiring.</p>
-            <p style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
-              Kod 15 daqiqa davomida amal qiladi.
-            </p>
+            <p>{t('auth.codeSentSubtitle')}</p>
           </div>
 
           <div className="auth-footer">
             <Link href="/auth/login" className="auth-link">
-              Kirish sahifasiga qaytish
+              {t('auth.backToLogin')}
             </Link>
           </div>
         </div>
@@ -80,15 +79,15 @@ const ForgotPasswordPage = () => {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-header">
-          <h1>UniStart <span className="logo-orange">Hub</span></h1>
-            <h2>Parolni tiklash</h2>
-            <p>Email manzilingizni kiriting</p>
+          <h1>{t('public.heroTitle')} <span className="logo-orange">Hub</span></h1>
+          <h2>{t('auth.resetPassword')}</h2>
+          <p>{t('auth.email')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label htmlFor="email" className="form-label">
-              Email *
+              {t('auth.email')} *
             </label>
             <input
               type="email"
@@ -108,13 +107,13 @@ const ForgotPasswordPage = () => {
             className="auth-button"
             disabled={isLoading}
           >
-            {isLoading ? 'Yuborilmoqda...' : 'Tasdiqlash kodi yuborish'}
+            {isLoading ? t('common.loading') : t('auth.sendResetLink')}
           </button>
         </form>
 
         <div className="auth-footer">
           <Link href="/auth/login" className="auth-link">
-            Kirish sahifasiga qaytish
+            {t('auth.backToLogin')}
           </Link>
         </div>
       </div>

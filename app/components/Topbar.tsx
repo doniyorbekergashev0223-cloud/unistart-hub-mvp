@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useProjects } from '../context/ProjectsContext';
+import { useTranslation, useLocale, type Locale } from '../context/LocaleContext';
 import '../styles/Topbar.css';
 
 interface Notification {
@@ -22,11 +23,24 @@ interface UserWithAvatar {
   avatarUrl?: string;
 }
 
-type Theme = 'light' | 'dark' | 'system';
+const LOCALES: { code: Locale; label: string }[] = [
+  { code: 'uz', label: 'UZ' },
+  { code: 'ru', label: 'RU' },
+  { code: 'en', label: 'EN' },
+];
+
+/** Maps backend notification title to translation key (notifications.*). */
+const NOTIFICATION_TITLE_TO_KEY: Record<string, string> = {
+  'Yangi loyiha': 'newProject',
+  'Loyiha qabul qilindi': 'projectAccepted',
+  'Loyiha rad etildi': 'projectRejected',
+  "Loyihangiz ko'rib chiqildi": 'projectReviewed',
+};
 
 const Topbar = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, organization, logout, isAuthenticated } = useAuth();
   const { searchProjects, isSearching } = useProjects();
+  const { t, locale, setLocale } = useLocale();
   const router = useRouter();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -36,8 +50,6 @@ const Topbar = () => {
   const [searchValue, setSearchValue] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [theme, setTheme] = useState<Theme>('system');
-  const [savingTheme, setSavingTheme] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -45,15 +57,9 @@ const Topbar = () => {
   };
 
   const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'Admin';
-      case 'expert':
-        return 'Ekspert';
-      case 'user':
-      default:
-        return 'Foydalanuvchi';
-    }
+    if (role === 'admin') return t('roles.admin');
+    if (role === 'expert') return t('roles.expert');
+    return t('roles.user');
   };
 
   const loadNotifications = async () => {
@@ -62,10 +68,7 @@ const Topbar = () => {
     setLoadingNotifications(true);
     try {
       const response = await fetch('/api/notifications', {
-        headers: {
-          'x-user-id': user.id,
-          'x-user-role': user.role,
-        },
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -90,9 +93,8 @@ const Topbar = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user.id,
-          'x-user-role': user.role,
         },
+        credentials: 'include',
         body: JSON.stringify({ notificationId }),
       });
 
@@ -118,9 +120,18 @@ const Topbar = () => {
   useEffect(() => {
     if (isAuthenticated && user) {
       loadNotifications();
-      // Refresh notifications every 30 seconds
-      const interval = setInterval(loadNotifications, 30000);
-      return () => clearInterval(interval);
+      const interval = setInterval(loadNotifications, 15000);
+      const handleRefetch = () => loadNotifications();
+      const handleVisibility = () => {
+        if (document.visibilityState === 'visible') loadNotifications();
+      };
+      window.addEventListener('notifications-refetch', handleRefetch);
+      document.addEventListener('visibilitychange', handleVisibility);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('notifications-refetch', handleRefetch);
+        document.removeEventListener('visibilitychange', handleVisibility);
+      };
     }
   }, [isAuthenticated, user]);
 
@@ -186,74 +197,12 @@ const Topbar = () => {
   };
 
   const dropdownItems = [
-    { label: user?.name || 'Foydalanuvchi', type: 'info', initials: user?.name ? getUserInitials(user.name) : 'U' },
+    { label: user?.name || t('common.user'), type: 'info', initials: user?.name ? getUserInitials(user.name) : 'U' },
     { label: getRoleLabel(user?.role || 'user'), type: 'role' },
-    { label: 'Shaxsiy ma\'lumotlar', type: 'link', action: handleProfileClick },
-    { label: 'Sozlamalar', type: 'link', action: handleSettingsClick },
-    { label: 'Chiqish', type: 'action', action: handleLogout }
+    { label: t('topbar.personalInfo'), type: 'link', action: handleProfileClick },
+    { label: t('topbar.settings'), type: 'link', action: handleSettingsClick },
+    { label: t('topbar.logout'), type: 'action', action: handleLogout }
   ];
-
-  const applyTheme = (selectedTheme: Theme) => {
-    const root = document.documentElement;
-
-    if (selectedTheme === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-    } else {
-      root.setAttribute('data-theme', selectedTheme);
-    }
-
-    try {
-      localStorage.setItem('theme', selectedTheme);
-    } catch {
-      // ignore storage errors
-    }
-  };
-
-  const loadThemeFromDB = async () => {
-    if (!user) return;
-
-    try {
-      const response = await fetch('/api/settings/appearance', {
-        headers: {
-          'x-user-id': user.id,
-          'x-user-role': user.role,
-        },
-      });
-
-      const result = await response.json().catch(() => null);
-      if (result?.ok && result.data?.theme) {
-        setTheme(result.data.theme as Theme);
-        applyTheme(result.data.theme as Theme);
-      }
-    } catch (error) {
-      console.error('Failed to load theme in Topbar:', error);
-    }
-  };
-
-  const handleThemeChange = async (newTheme: Theme) => {
-    if (!user) return;
-
-    setTheme(newTheme);
-    applyTheme(newTheme);
-    setSavingTheme(true);
-
-    try {
-      await fetch('/api/settings/appearance', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user.id,
-          'x-user-role': user.role,
-        },
-        body: JSON.stringify({ theme: newTheme }),
-      });
-    } catch (error) {
-      console.error('Failed to save theme from Topbar:', error);
-    } finally {
-      setSavingTheme(false);
-    }
-  };
 
   const toggleSidebar = () => {
     const newState = !sidebarOpen;
@@ -300,7 +249,7 @@ const Topbar = () => {
     <>
       <div className={`sidebar-overlay ${sidebarOpen ? 'active' : ''}`}></div>
       <div className="topbar">
-        <button className="mobile-menu-button" onClick={toggleSidebar} aria-label="Menu">
+        <button className="mobile-menu-button" onClick={toggleSidebar} aria-label={t('topbar.menu')}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -308,10 +257,35 @@ const Topbar = () => {
           </svg>
         </button>
         <div className="topbar-left">
+        {organization && (
+          <div className="topbar-org" aria-label={organization.name}>
+            {organization.logoUrl ? (
+              <img
+                src={organization.logoUrl}
+                alt=""
+                className="topbar-org-logo"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div
+              className="topbar-org-fallback"
+              style={{ display: organization.logoUrl ? 'none' : 'flex' }}
+              aria-hidden
+            >
+              {organization.name.charAt(0).toUpperCase()}
+            </div>
+            <span className="topbar-org-name">{organization.name}</span>
+          </div>
+        )}
         <div className="search-container">
           <input
             type="text"
-            placeholder="Qidirish..."
+            placeholder={t('topbar.searchPlaceholder')}
             className="search-input"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
@@ -330,6 +304,20 @@ const Topbar = () => {
       </div>
 
       <div className="topbar-right">
+        <div className="locale-switcher" role="group" aria-label="Language">
+          {LOCALES.map(({ code, label }) => (
+            <button
+              key={code}
+              type="button"
+              className={`locale-btn ${locale === code ? 'active' : ''}`}
+              onClick={() => setLocale(code)}
+              aria-pressed={locale === code}
+              aria-label={label}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="notification-container">
           <button
             className="notification-button"
@@ -353,138 +341,42 @@ const Topbar = () => {
           {showNotifications && (
               <div className="notification-dropdown">
                 <div className="notification-header">
-                  <h4>Bildirishnomalar</h4>
-                  {loadingNotifications && <span className="loading-text">Yuklanmoqda...</span>}
+                  <h4>{t('topbar.notifications')}</h4>
+                  {loadingNotifications && <span className="loading-text">{t('common.loading')}</span>}
                 </div>
                 <div className="notification-list">
                 {notifications.length === 0 ? (
                   <div className="notification-empty">
-                    Bildirishnomalar yo'q
+                    {t('topbar.notificationsEmpty')}
                   </div>
                 ) : (
-                  notifications.map((notification) => (
+                  notifications.map((notification) => {
+                    const notifKey = NOTIFICATION_TITLE_TO_KEY[notification.title];
+                    const titleText = notifKey ? t(`notifications.${notifKey}`) : notification.title;
+                    const messageText = notifKey ? t(`notifications.${notifKey}Message`) : notification.message;
+                    return (
                     <div
                       key={notification.id}
                       className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
                       onClick={() => handleNotificationClick(notification)}
                     >
                       <div className="notification-content">
-                        <div className="notification-title">{notification.title}</div>
-                        <div className="notification-message">{notification.message}</div>
+                        <div className="notification-title">{titleText}</div>
+                        <div className="notification-message">{messageText}</div>
                         <div className="notification-date">
-                          {new Date(notification.createdAt).toLocaleDateString('uz-UZ', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {new Date(notification.createdAt).toLocaleDateString(
+                            locale === 'uz' ? 'uz-UZ' : locale === 'ru' ? 'ru-RU' : 'en-US',
+                            { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+                          )}
                         </div>
                       </div>
                     </div>
-                  ))
+                  );
+                  })
                 )}
                 </div>
               </div>
           )}
-        </div>
-
-        {/* Theme toggle (sun/moon) next to notification */}
-        <div
-          className="topbar-theme-toggle"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            background: 'rgba(15, 23, 42, 0.03)',
-            borderRadius: 999,
-            padding: 2,
-            border: '1px solid rgba(226, 232, 240, 0.8)',
-            marginLeft: 8,
-            marginRight: 8,
-          }}
-        >
-          <button
-            type="button"
-            aria-label="Yorug' rejim"
-            disabled={savingTheme}
-            onClick={() => handleThemeChange('light')}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 999,
-              border: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              background:
-                theme === 'light'
-                  ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
-                  : 'transparent',
-              color: theme === 'light' ? '#ffffff' : '#64748b',
-              boxShadow:
-                theme === 'light'
-                  ? '0 4px 14px rgba(249, 115, 22, 0.3)'
-                  : 'none',
-            }}
-          >
-            {/* Sun icon */}
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <line x1="12" y1="2" x2="12" y2="5" />
-              <line x1="12" y1="19" x2="12" y2="22" />
-              <line x1="4.22" y1="4.22" x2="6.34" y2="6.34" />
-              <line x1="17.66" y1="17.66" x2="19.78" y2="19.78" />
-              <line x1="2" y1="12" x2="5" y2="12" />
-              <line x1="19" y1="12" x2="22" y2="12" />
-              <line x1="4.22" y1="19.78" x2="6.34" y2="17.66" />
-              <line x1="17.66" y1="6.34" x2="19.78" y2="4.22" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            aria-label="Qorong'u rejim"
-            disabled={savingTheme}
-            onClick={() => handleThemeChange('dark')}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 999,
-              border: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              background:
-                theme === 'dark'
-                  ? 'linear-gradient(135deg, #0f172a 0%, #020617 100%)'
-                  : 'transparent',
-              color: theme === 'dark' ? '#ffffff' : '#64748b',
-              boxShadow:
-                theme === 'dark'
-                  ? '0 4px 14px rgba(15, 23, 42, 0.4)'
-                  : 'none',
-            }}
-          >
-            {/* Moon icon */}
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M21 12.79A9 9 0 0 1 12.21 3 7 7 0 1 0 21 12.79z" />
-            </svg>
-          </button>
         </div>
 
         <div className="profile-container">
@@ -532,7 +424,7 @@ const Topbar = () => {
               {user?.name?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div className="profile-info">
-              <span className="user-name">{user?.name || 'Foydalanuvchi'}</span>
+              <span className="user-name">{user?.name || t('common.user')}</span>
               <span className="user-role">{getRoleLabel(user?.role || 'user')}</span>
             </div>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

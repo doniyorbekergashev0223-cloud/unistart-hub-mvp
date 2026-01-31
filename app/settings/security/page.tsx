@@ -46,9 +46,8 @@ export default function SecuritySettingsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user.id,
-          'x-user-role': user.role,
         },
+        credentials: 'include',
         body: JSON.stringify({
           currentPassword,
           newPassword,

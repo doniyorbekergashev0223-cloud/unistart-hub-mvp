@@ -129,7 +129,7 @@ export default function HelpPage() {
         <Sidebar />
         <div className="dashboard-main">
           <Topbar />
-          <div className="dashboard-content">
+          <div id="main" className="dashboard-content">
             <div className="help-page">
               {/* Hero Section */}
               <div className="help-hero">

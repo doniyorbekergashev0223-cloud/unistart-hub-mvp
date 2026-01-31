@@ -12,10 +12,22 @@ interface User {
   avatarUrl?: string | null;
 }
 
+export interface OrganizationInfo {
+  name: string;
+  logoUrl?: string | null;
+}
+
 interface AuthContextType {
   user: User | null;
+  organization: OrganizationInfo | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<boolean>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    role: UserRole,
+    organizationSlug: string
+  ) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -31,8 +43,6 @@ export const useAuth = () => {
   return context;
 };
 
-const STORAGE_KEY = 'unistart_auth_user';
-
 type ApiError = { code: string; message: string; details?: unknown };
 type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: ApiError };
 
@@ -40,12 +50,13 @@ function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
   return !!value && typeof value === 'object' && 'ok' in value;
 }
 
-async function postJson<T>(url: string, body: unknown): Promise<ApiResponse<T> | null> {
+async function postJson<T>(url: string, body: unknown, credentials: RequestCredentials = 'include'): Promise<ApiResponse<T> | null> {
   try {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      credentials,
     });
 
     const json = (await res.json().catch(() => null)) as unknown;
@@ -62,123 +73,44 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [organization, setOrganization] = useState<OrganizationInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore user from localStorage on mount
-  // CRITICAL: Do not logout user on restore errors - only on truly invalid sessions
+  // Restore session from httpOnly cookie via /api/auth/verify (no client identity sent)
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          try {
-            const parsedUser = JSON.parse(stored) as User;
-            // Set user immediately to prevent flash of login page
-            setUser(parsedUser);
-            // Verify session in background (non-blocking)
-            const isValid = await verifySession(parsedUser);
-            if (!isValid) {
-              // Only clear if session is truly invalid (401 response)
-              localStorage.removeItem(STORAGE_KEY);
-              setUser(null);
-            }
-          } catch (parseError) {
-            // Invalid stored data - clear it
-            localStorage.removeItem(STORAGE_KEY);
-            setUser(null);
-          }
+        const response = await fetch('/api/auth/verify', {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-store',
+          signal: AbortSignal.timeout(5000),
+        });
+
+        if (!response.ok) {
+          setUser(null);
+          setOrganization(null);
+          return;
         }
-      } catch (error) {
-        // Storage errors - don't logout, just log
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Failed to restore session:', error);
+
+        const result = await response.json().catch(() => null);
+        if (result?.ok && result.data?.user) {
+          setUser(result.data.user);
+          setOrganization(result.data?.organization ?? null);
+        } else {
+          setUser(null);
+          setOrganization(null);
         }
-        // Don't clear storage on errors - might be temporary
+      } catch {
+        setUser(null);
+        setOrganization(null);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     void restoreSession();
   }, []);
-
-  // Verify session with backend
-  // CRITICAL: Network errors should NOT logout user - only invalid sessions should
-  const verifySession = async (user: User): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/auth/verify', {
-        method: 'GET',
-        headers: {
-          'x-user-id': user.id,
-          'x-user-role': user.role,
-        },
-        cache: 'no-store', // Prevent caching
-        // Add timeout to prevent hanging
-        signal: AbortSignal.timeout(5000), // 5 second timeout
-      });
-      
-      // Network errors or timeouts - keep user logged in (session might still be valid)
-      if (!response.ok) {
-        // Only logout on 401 (unauthorized) - means session is truly invalid
-        if (response.status === 401) {
-          return false;
-        }
-        // For other errors (503, 500, etc.), assume session is still valid
-        // This prevents logout on temporary API failures
-        return true;
-      }
-      
-      const result = await response.json().catch(() => null);
-      if (!result || !result.ok) {
-        // Only logout if explicitly told session is invalid
-        if (result?.error?.code === 'INVALID_SESSION') {
-          return false;
-        }
-        // Other errors - keep user logged in
-        return true;
-      }
-      
-      // Update user data if avatarUrl changed
-      if (result.data?.user) {
-        const updatedUser = { ...user, ...result.data.user };
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
-        } catch {
-          // Ignore storage errors
-        }
-      }
-      
-      return true;
-    } catch (error: any) {
-      // Network errors, timeouts, etc. - DO NOT logout user
-      // Session might still be valid, just can't verify right now
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('Session verification failed (network error):', error?.message || error);
-        console.warn('Keeping user logged in to prevent false logout');
-      }
-      return true; // Keep user logged in on network errors
-    }
-  };
-
-  // Save user to localStorage
-  const saveUser = (userData: User) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
-      setUser(userData);
-    } catch (error) {
-      console.error('Failed to save user to localStorage:', error);
-    }
-  };
-
-  // Remove user from localStorage
-  const removeUser = () => {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-      setUser(null);
-    } catch (error) {
-      console.error('Failed to remove user from localStorage:', error);
-    }
-  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -188,7 +120,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       );
 
       if (response?.ok && response.data?.user) {
-        saveUser(response.data.user);
+        setUser(response.data.user);
+        // Refetch verify to get organization so Topbar shows org immediately
+        const verifyRes = await fetch('/api/auth/verify', { method: 'GET', credentials: 'include', cache: 'no-store' });
+        const verifyJson = await verifyRes.json().catch(() => null);
+        if (verifyJson?.ok && verifyJson.data?.organization) {
+          setOrganization(verifyJson.data.organization);
+        } else {
+          setOrganization(null);
+        }
         return true;
       }
 
@@ -199,39 +139,66 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (name: string, email: string, password: string, role: UserRole): Promise<boolean> => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    _role: UserRole,
+    organizationSlug: string
+  ): Promise<boolean> => {
     try {
-      const response = await postJson<{ user: { id: string; name: string; email: string; role: UserRole; avatarUrl?: string | null } }>(
-        '/api/auth/register',
-        { name, email, password }
-      );
+      const response =
+        await postJson<{ user: { id: string; name: string; email: string; role: UserRole; avatarUrl?: string | null }; organization?: { name: string; logoUrl?: string | null } }>(
+          '/api/auth/register',
+          { name, email, password, organizationSlug }
+        );
 
       if (response?.ok && response.data?.user) {
-        saveUser(response.data.user);
-        // Trigger stats refetch event for real-time statistics update
+        setUser(response.data.user);
+        if (response.data?.organization) {
+          setOrganization(response.data.organization);
+        } else {
+          const verifyRes = await fetch('/api/auth/verify', { method: 'GET', credentials: 'include', cache: 'no-store' });
+          const verifyJson = await verifyRes.json().catch(() => null);
+          if (verifyJson?.ok && verifyJson.data?.organization) {
+            setOrganization(verifyJson.data.organization);
+          } else {
+            setOrganization(null);
+          }
+        }
         window.dispatchEvent(new CustomEvent('stats-refetch'));
         return true;
+      }
+
+      if (response && !response.ok && response.error?.message) {
+        const details = response.error?.details as { raw?: string } | undefined;
+        const fullMessage = details?.raw
+          ? `${response.error.message}\n${details.raw}`
+          : response.error.message;
+        throw new Error(fullMessage);
       }
 
       return false;
     } catch (error) {
       console.error('Register error:', error);
+      if (error instanceof Error) throw error;
       return false;
     }
   };
 
   const logout = async () => {
-    // Call logout API to invalidate session on server
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch (error) {
       console.error('Logout API call failed:', error);
     }
-    removeUser();
+    setUser(null);
+    setOrganization(null);
   };
 
   const value: AuthContextType = {
     user,
+    organization,
     login,
     register,
     logout,

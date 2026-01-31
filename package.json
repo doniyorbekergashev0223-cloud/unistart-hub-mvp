@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "UniStart Hub - Platform for startup ideas",
   "private": true,
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
@@ -16,6 +19,7 @@
     "@supabase/supabase-js": "^2.91.1",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
+    "jose": "^5.10.0",
     "next": "^14.0.0",
     "nodemailer": "^6.9.8",
     "react": "^18.2.0",
@@ -24,10 +28,12 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "@types/nodemailer": "^6.4.14",
     "@types/node": "^20.0.0",
+    "@types/nodemailer": "^6.4.14",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "16.1.6",
     "prisma": "^6.0.0",
     "tsx": "^4.7.0",
     "typescript": "^5.0.0"

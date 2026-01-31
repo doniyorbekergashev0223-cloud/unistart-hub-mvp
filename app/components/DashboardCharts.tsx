@@ -36,7 +36,7 @@ const DashboardCharts = () => {
   ].filter(item => item.value > 0);
 
   return (
-    <div className="charts-section">
+    <div className="charts-section dashboard-section">
       <h2 className="charts-section-title">
         📊 Statistika va tahlil
       </h2>
@@ -72,6 +72,9 @@ const DashboardCharts = () => {
                 strokeWidth={3}
                 dot={{ fill: '#f97316', r: 5 }}
                 activeDot={{ r: 7 }}
+                isAnimationActive
+                animationDuration={400}
+                animationEasing="ease-out"
               />
             </LineChart>
           </ResponsiveContainer>
@@ -91,6 +94,9 @@ const DashboardCharts = () => {
                 outerRadius={100}
                 fill="#8884d8"
                 dataKey="value"
+                isAnimationActive
+                animationDuration={400}
+                animationEasing="ease-out"
               >
                 {pieData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />

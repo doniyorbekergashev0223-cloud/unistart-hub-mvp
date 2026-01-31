@@ -12,7 +12,7 @@ export default function DevelopersPage() {
         <Sidebar />
         <div className="dashboard-main">
           <Topbar />
-          <div className="dashboard-content">
+          <div id="main" className="dashboard-content">
             <div className="founder-page">
               {/* Hero Section */}
               <div className="founder-hero">

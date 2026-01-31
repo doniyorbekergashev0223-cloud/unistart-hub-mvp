@@ -48,6 +48,7 @@ Vercel Dashboard > Project Settings > Environment Variables'ga quyidagilarni qo'
 
 **REQUIRED:**
 ```
+JWT_SECRET=[min 16 characters, use openssl rand -base64 32]
 DATABASE_URL=postgresql://postgres.[PROJECT_REF]:[PASSWORD]@[HOST]:5432/postgres
 NEXT_PUBLIC_SUPABASE_URL=https://[PROJECT_REF].supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=[YOUR_ANON_KEY]

@@ -2,6 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
+
+const STATUS_TO_KEY: Record<string, string> = {
+  'Qabul qilindi': 'status.accepted',
+  'Jarayonda': 'status.pending',
+  'Rad etildi': 'status.rejected',
+};
 
 interface Project {
   id: string | number;
@@ -34,6 +41,7 @@ interface Review {
 
 const ProjectReview: React.FC<ProjectReviewProps> = ({ project, onStatusChange }) => {
   const { user } = useAuth();
+  const { t } = useLocale();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
@@ -43,10 +51,7 @@ const ProjectReview: React.FC<ProjectReviewProps> = ({ project, onStatusChange }
 
     try {
       const response = await fetch(`/api/projects/${project.id}/reviews`, {
-        headers: {
-          'x-user-id': user.id,
-          'x-user-role': user.role,
-        },
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -128,7 +133,7 @@ const ProjectReview: React.FC<ProjectReviewProps> = ({ project, onStatusChange }
                   </div>
                   <div className="review-status">
                     <span className={`status-badge ${getStatusClass(review.status)}`}>
-                      {review.status}
+                      {t(STATUS_TO_KEY[review.status] ?? 'status.pending')}
                     </span>
                   </div>
                   <p className="comment-content">{review.comment}</p>

@@ -17,18 +17,31 @@ model AuditLog {
   createdAt DateTime @default(now())
 }
 
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String?  @unique
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  users     User[]
+}
+
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  avatarUrl    String?
-  role         UserRole  @default(user)
-  createdAt    DateTime  @default(now())
-  projects     Project[]
+  id             String         @id @default(cuid())
+  name           String
+  email          String         @unique
+  passwordHash   String
+  avatarUrl      String?
+  role           UserRole       @default(user)
+  organizationId String?
+  createdAt      DateTime       @default(now())
+  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  projects       Project[]
 
   notifications Notification[]
   passwordResets PasswordReset[]
+
+  @@index([organizationId])
 }
 
 model Project {

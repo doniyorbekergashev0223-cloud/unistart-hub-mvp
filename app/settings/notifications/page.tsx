@@ -36,10 +36,7 @@ export default function NotificationsSettingsPage() {
 
       // Fallback to API (returns defaults)
       const response = await fetch('/api/settings/notifications', {
-        headers: {
-          'x-user-id': user.id,
-          'x-user-role': user.role,
-        },
+        credentials: 'include',
       });
 
       const result = await response.json();
@@ -68,9 +65,8 @@ export default function NotificationsSettingsPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': user.id,
-          'x-user-role': user.role,
         },
+        credentials: 'include',
         body: JSON.stringify({ [field]: value }),
       });
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { uploadProjectFile } from '@/lib/supabase'
+import { getSession } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,18 +28,6 @@ function jsonError(status: number, code: string, message: string, details?: unkn
   )
 }
 
-function parseRole(value: string | null): Role | null {
-  if (value === 'user' || value === 'admin' || value === 'expert') return value
-  return null
-}
-
-function getActor(req: Request): { userId: string; role: Role } | null {
-  const userId = req.headers.get('x-user-id')?.trim()
-  const role = parseRole(req.headers.get('x-user-role'))
-  if (!userId || !role) return null
-  return { userId, role }
-}
-
 export async function GET(req: Request) {
   if (!prisma) {
     return jsonError(
@@ -48,19 +37,57 @@ export async function GET(req: Request) {
     )
   }
 
-  const actor = getActor(req)
-  if (!actor) {
-    return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi (x-user-id va x-user-role headerlari yo'q).")
+  const session = await getSession(req)
+  if (!session) {
+    return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.")
   }
 
-  const where =
-    actor.role === 'admin' || actor.role === 'expert'
-      ? {}
-      : { userId: actor.userId }
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { organizationId: true },
+  })
+  if (!dbUser?.organizationId) {
+    return NextResponse.json({
+      ok: true,
+      data: { projects: [] },
+    })
+  }
+  const orgId = dbUser.organizationId
+  const actor = { userId: session.userId, role: session.role }
+
+  let search = ''
+  try {
+    const url = req.url.startsWith('http') ? new URL(req.url) : new URL(req.url, 'https://localhost')
+    search = url.searchParams.get('search')?.trim() || ''
+  } catch {
+    const q = req.url?.indexOf('?')
+    if (typeof q === 'number' && q >= 0) {
+      const params = new URLSearchParams(req.url.slice(q + 1))
+      search = params.get('search')?.trim() || ''
+    }
+  }
+
+  const baseWhere: {
+    userId?: string
+    user: { organizationId: string }
+    OR?: { title?: { contains: string; mode: 'insensitive' }; description?: { contains: string; mode: 'insensitive' } }[]
+  } = {
+    user: { organizationId: orgId },
+  }
+  if (actor.role === 'user') {
+    baseWhere.userId = actor.userId
+  }
+  if (search.length > 0) {
+    baseWhere.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+    ]
+  }
+  const whereClause = baseWhere
 
   try {
     const projects = await prisma.project.findMany({
-      where,
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
       include: {
         user: {
@@ -123,10 +150,19 @@ export async function POST(req: Request) {
     )
   }
 
-  const actor = getActor(req)
-  if (!actor) {
-    return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi (x-user-id va x-user-role headerlari yo'q).")
+  const session = await getSession(req)
+  if (!session) {
+    return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.")
   }
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { organizationId: true },
+  })
+  if (!dbUser?.organizationId) {
+    return jsonError(403, 'FORBIDDEN', "Tashkilotga bog'lanmagan. Loyiha yuborish uchun tashkilot a'zosi bo'lishingiz kerak.")
+  }
+  const actor = { userId: session.userId, role: session.role }
 
   const contentType = req.headers.get('content-type') || ''
 
@@ -227,13 +263,22 @@ export async function POST(req: Request) {
         fileUrl = await uploadProjectFile(file, userIdToUse)
       } catch (uploadError: any) {
         console.error('File upload error:', uploadError)
-        // Continue without file - don't fail the entire submission
-        // But log the error for debugging
         if (uploadError?.message?.includes('Bucket not found')) {
-          console.error('⚠️ Supabase Storage bucket "project-files" topilmadi. SUPABASE_STORAGE_SETUP.md faylini ko\'ring.')
+          return jsonError(
+            503,
+            'STORAGE_BUCKET_NOT_FOUND',
+            "Supabase Storage bucket 'project-files' topilmadi. SUPABASE_STORAGE_SETUP.md faylini ko'ring."
+          )
         }
+        return jsonError(
+          502,
+          'FILE_UPLOAD_FAILED',
+          uploadError?.message || "Faylni Supabase Storage'ga yuklashda xatolik. Iltimos, qayta urinib ko'ring yoki faylsiz yuboring."
+        )
       }
     }
+
+    const orgId = dbUser.organizationId
 
     // Create project
     let created
@@ -279,6 +324,33 @@ export async function POST(req: Request) {
       }
       
       return jsonError(500, 'DATABASE_ERROR', "Ma'lumotlar bazasi bilan bog'lanishda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.")
+    }
+
+    // SECURITY: Notifications ONLY when a USER submits a project. Recipients: expert/admin in SAME org only.
+    // Actor org already verified (early return above). No broadcast; each notification has exactly one userId.
+    if (session.role === 'user' && orgId) {
+      try {
+        const expertsAndAdmins = await prisma.user.findMany({
+          where: {
+            organizationId: orgId,
+            id: { not: session.userId },
+            role: { in: ['expert', 'admin'] },
+          },
+          select: { id: true, organizationId: true },
+        })
+        const notifTitle = 'Yangi loyiha'
+        const notifMessage = "Yangi loyiha yuborildi va tekshiruvni kutmoqda."
+        for (const u of expertsAndAdmins) {
+          if (u.organizationId !== orgId) continue
+          await prisma.notification.create({
+            data: { userId: u.id, title: notifTitle, message: notifMessage },
+          })
+        }
+      } catch (notifyErr) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Notify experts/admins on project create:', notifyErr)
+        }
+      }
     }
 
     return NextResponse.json(

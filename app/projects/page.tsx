@@ -11,7 +11,7 @@ export default function ProjectsPage() {
         <Sidebar />
         <div className="dashboard-main">
           <Topbar />
-          <div className="dashboard-content">
+          <div id="main" className="dashboard-content">
             <h2 className="stats-title">Loyihalar</h2>
             <div style={{ color: '#64748b', marginBottom: '1.5rem' }}>
               Loyihalar ro‘yxati real ma’lumotlar bazasidan olinadi (DB sozlanmagan bo‘lsa, mock ko‘rsatiladi).

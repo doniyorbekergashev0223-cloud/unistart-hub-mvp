@@ -3,10 +3,12 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from '../../context/LocaleContext';
 
 const ResetPasswordForm = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const t = useTranslation();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -15,7 +17,6 @@ const ResetPasswordForm = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<Record<string, string>>({});
 
-  // Get email and code from URL params if present
   useEffect(() => {
     const emailParam = searchParams.get('email');
     const codeParam = searchParams.get('token');
@@ -29,18 +30,18 @@ const ResetPasswordForm = () => {
     const fieldErrors: Record<string, string> = {};
 
     if (!email || !email.includes('@')) {
-      fieldErrors.email = "To'g'ri email kiriting";
+      fieldErrors.email = t('auth.emailInvalid');
     }
     if (!code || code.length !== 6 || !/^\d+$/.test(code)) {
-      fieldErrors.code = "Tasdiqlash kodi 6 ta raqamdan iborat bo'lishi kerak";
+      fieldErrors.code = t('auth.resetPassword.error');
     }
     if (!newPassword) {
-      fieldErrors.newPassword = 'Yangi parol majburiy';
+      fieldErrors.newPassword = t('auth.passwordRequired');
     } else if (newPassword.length < 8) {
-      fieldErrors.newPassword = "Parol kamida 8 ta belgidan iborat bo'lishi kerak";
+      fieldErrors.newPassword = t('auth.resetPassword.password');
     }
     if (newPassword !== confirmPassword) {
-      fieldErrors.confirmPassword = 'Parollar mos kelmaydi';
+      fieldErrors.confirmPassword = t('auth.resetPassword.passwordMismatch');
     }
 
     if (Object.keys(fieldErrors).length > 0) {
@@ -68,7 +69,6 @@ const ResetPasswordForm = () => {
 
       if (result.ok) {
         setIsSuccess(true);
-        // Redirect to login after 3 seconds
         setTimeout(() => {
           router.push('/auth/login');
         }, 3000);
@@ -76,11 +76,11 @@ const ResetPasswordForm = () => {
         if (result.error?.details?.fieldErrors) {
           setError(result.error.details.fieldErrors);
         } else {
-          setError({ general: result.error?.message || 'Xatolik yuz berdi' });
+          setError({ general: result.error?.message || t('auth.resetPassword.error') });
         }
       }
     } catch (err) {
-      setError({ general: 'Tarmoq xatoligi. Iltimos, qayta urinib ko\'ring.' });
+      setError({ general: t('auth.networkError') });
     } finally {
       setIsLoading(false);
     }
@@ -91,19 +91,19 @@ const ResetPasswordForm = () => {
       <div className="auth-page">
         <div className="auth-container">
           <div className="auth-header">
-            <h1>UniStart <span className="logo-orange">Hub</span></h1>
-            <h2>Parol o'zgartirildi</h2>
-            <p>Parolingiz muvaffaqiyatli o'zgartirildi</p>
+            <h1>{t('public.heroTitle')} <span className="logo-orange">Hub</span></h1>
+            <h2>{t('auth.resetPassword.success')}</h2>
+            <p>{t('auth.resetPassword.success')}</p>
           </div>
 
           <div className="success-message">
             <div className="success-icon">✓</div>
-            <p>Parolingiz muvaffaqiyatli o'zgartirildi. Kirish sahifasiga yo'naltirilmoqdasiz...</p>
+            <p>{t('auth.resetPassword.success')}</p>
           </div>
 
           <div className="auth-footer">
             <Link href="/auth/login" className="auth-link">
-              Kirish sahifasiga o'tish
+              {t('auth.resetPassword.backToLogin')}
             </Link>
           </div>
         </div>
@@ -115,9 +115,9 @@ const ResetPasswordForm = () => {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-header">
-          <h1>UniStart <span className="logo-orange">Hub</span></h1>
-          <h2>Yangi parol kiriting</h2>
-          <p>Tasdiqlash kodini va yangi parolni kiriting</p>
+          <h1>{t('public.heroTitle')} <span className="logo-orange">Hub</span></h1>
+          <h2>{t('auth.resetPassword.title')}</h2>
+          <p>{t('auth.resetPassword.description')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
@@ -129,7 +129,7 @@ const ResetPasswordForm = () => {
 
           <div className="form-group">
             <label htmlFor="email" className="form-label">
-              Email *
+              {t('auth.email')} *
             </label>
             <input
               type="email"
@@ -146,7 +146,7 @@ const ResetPasswordForm = () => {
 
           <div className="form-group">
             <label htmlFor="code" className="form-label">
-              Tasdiqlash kodi *
+              {t('auth.resetPassword.description')} *
             </label>
             <input
               type="text"
@@ -164,7 +164,7 @@ const ResetPasswordForm = () => {
 
           <div className="form-group">
             <label htmlFor="newPassword" className="form-label">
-              Yangi parol *
+              {t('auth.password')} *
             </label>
             <input
               type="password"
@@ -173,7 +173,7 @@ const ResetPasswordForm = () => {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className={`form-input ${error.newPassword ? 'error' : ''}`}
-              placeholder="Kamida 8 ta belgi"
+              placeholder={t('auth.resetPassword.password')}
               disabled={isLoading}
             />
             {error.newPassword && <span className="error-message">{error.newPassword}</span>}
@@ -181,7 +181,7 @@ const ResetPasswordForm = () => {
 
           <div className="form-group">
             <label htmlFor="confirmPassword" className="form-label">
-              Parolni tasdiqlash *
+              {t('auth.confirmPassword')} *
             </label>
             <input
               type="password"
@@ -190,7 +190,7 @@ const ResetPasswordForm = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className={`form-input ${error.confirmPassword ? 'error' : ''}`}
-              placeholder="Parolni qayta kiriting"
+              placeholder={t('auth.resetPassword.confirmPassword')}
               disabled={isLoading}
             />
             {error.confirmPassword && <span className="error-message">{error.confirmPassword}</span>}
@@ -201,13 +201,13 @@ const ResetPasswordForm = () => {
             className="auth-button"
             disabled={isLoading}
           >
-            {isLoading ? 'O\'zgartirilmoqda...' : 'Parolni o\'zgartirish'}
+            {isLoading ? t('auth.resetPassword.loading') : t('auth.resetPassword.submit')}
           </button>
         </form>
 
         <div className="auth-footer">
           <Link href="/auth/login" className="auth-link">
-            Kirish sahifasiga qaytish
+            {t('auth.resetPassword.backToLogin')}
           </Link>
         </div>
       </div>
@@ -216,13 +216,14 @@ const ResetPasswordForm = () => {
 };
 
 const ResetPasswordPage = () => {
+  const t = useTranslation();
   return (
     <Suspense fallback={
       <div className="auth-page">
         <div className="auth-container">
           <div className="auth-header">
-            <h1>UniStart <span className="logo-orange">Hub</span></h1>
-            <h2>Yuklanmoqda...</h2>
+            <h1>{t('public.heroTitle')} <span className="logo-orange">Hub</span></h1>
+            <h2>{t('auth.resetPassword.loading')}</h2>
           </div>
         </div>
       </div>

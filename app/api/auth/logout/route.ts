@@ -1,45 +1,27 @@
+import { NextResponse } from 'next/server'
+import { getSession, AUTH_COOKIE_NAME, AUTH_COOKIE_CLEAR_OPTIONS } from '@/lib/auth'
+import { logAuditEvent, getClientIp, getUserAgent } from '@/lib/audit'
 
-import { NextResponse } from 'next/server';
-
-import { logAuditEvent, getClientIp, getUserAgent } from '@/lib/audit';
-
-
-
-export const runtime = 'nodejs';
+export const runtime = 'nodejs'
 
 function jsonError(status: number, code: string, message: string) {
   return NextResponse.json(
     { ok: false, error: { code, message } },
     { status }
-  );
+  )
 }
 
 export async function POST(req: Request) {
-  const userId = req.headers.get('x-user-id');
-  if (!userId) {
-    return jsonError(401, 'UNAUTHORIZED', 'Kirish talab qilinadi.');
+  const session = await getSession(req)
+  if (session?.userId) {
+    try {
+      await logAuditEvent(session.userId, 'LOGOUT', getClientIp(req), getUserAgent(req))
+    } catch {
+      // Don't fail logout on audit error
+    }
   }
 
-  try {
-    // Log logout event
-    await logAuditEvent(
-      userId,
-      'LOGOUT',
-      getClientIp(req),
-      getUserAgent(req)
-    );
-
-
-    // Logout successful (audit logging removed as AuditLog model doesn't exist in schema)
-
-
-    // Logout successful (audit logging removed as AuditLog model doesn't exist in schema)
-
-
-    // Logout successful (audit logging removed as AuditLog model doesn't exist in schema)
-    return NextResponse.json({ ok: true, data: { message: 'Muvaffaqiyatli chiqildi' } });
-  } catch (error) {
-    console.error('Logout error:', error);
-    return jsonError(500, 'INTERNAL_ERROR', 'Server xatoligi yuz berdi.');
-  }
+  const res = NextResponse.json({ ok: true, data: { message: 'Muvaffaqiyatli chiqildi' } })
+  res.cookies.set(AUTH_COOKIE_NAME, '', AUTH_COOKIE_CLEAR_OPTIONS)
+  return res
 }
