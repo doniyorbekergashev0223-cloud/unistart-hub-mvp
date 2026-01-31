@@ -55,8 +55,18 @@ interface PublicStats {
   projectsByStatus: { jarayonda: number; qabulQilindi: number; radEtildi: number };
 }
 
+function toNum(v: unknown, def: number): number {
+  if (v == null) return def;
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string') {
+    const n = Number(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return def;
+}
+
 function normalizeStats(raw: unknown): PublicStats {
-  if (!raw || typeof raw !== 'object') {
+  if (raw == null || typeof raw !== 'object') {
     return {
       usersCount: 0,
       totalProjects: 0,
@@ -67,9 +77,7 @@ function normalizeStats(raw: unknown): PublicStats {
       projectsByStatus: { jarayonda: 0, qabulQilindi: 0, radEtildi: 0 },
     };
   }
-  const o = raw as Record<string, unknown>;
-  const num = (v: unknown, def: number) =>
-    typeof v === 'number' && Number.isFinite(v) ? v : def;
+  const d = raw as Record<string, unknown>;
   const arr = (v: unknown): { month: string; count: number; year: number }[] =>
     Array.isArray(v)
       ? v
@@ -83,18 +91,18 @@ function normalizeStats(raw: unknown): PublicStats {
           )
           .map((i) => ({ month: i.month, count: i.count, year: i.year }))
       : [];
-  const status = o.projectsByStatus as Record<string, unknown> | undefined;
+  const status = d.projectsByStatus as Record<string, unknown> | undefined;
   return {
-    usersCount: num(o.usersCount, 0),
-    totalProjects: num(o.totalProjects, 0),
-    organizationsCount: num(o.organizationsCount, 0),
-    universitiesCount: num(o.universitiesCount, 0),
-    youthAgencyUsersCount: num(o.youthAgencyUsersCount, 0),
-    userGrowthByMonth: arr(o.userGrowthByMonth),
+    usersCount: toNum(d.usersCount, 0),
+    totalProjects: toNum(d.totalProjects, 0),
+    organizationsCount: toNum(d.organizationsCount, 0),
+    universitiesCount: toNum(d.universitiesCount, 0),
+    youthAgencyUsersCount: toNum(d.youthAgencyUsersCount, 0),
+    userGrowthByMonth: arr(d.userGrowthByMonth),
     projectsByStatus: {
-      jarayonda: status ? num(status.jarayonda, 0) : 0,
-      qabulQilindi: status ? num(status.qabulQilindi, 0) : 0,
-      radEtildi: status ? num(status.radEtildi, 0) : 0,
+      jarayonda: status != null ? toNum(status.jarayonda, 0) : 0,
+      qabulQilindi: status != null ? toNum(status.qabulQilindi, 0) : 0,
+      radEtildi: status != null ? toNum(status.radEtildi, 0) : 0,
     },
   };
 }
@@ -180,8 +188,10 @@ export default function PublicDashboard() {
         })
         .then((result) => {
           if (cancelled) return;
-          if (result?.ok && result.data != null) {
-            setStats(normalizeStats(result.data));
+          const ok = result != null && result.ok === true;
+          const data = ok && result != null && result.data != null ? result.data : null;
+          if (data != null && typeof data === 'object') {
+            setStats(normalizeStats(data));
             setError(null);
             if (retry) setLoading(false);
           } else {
@@ -226,11 +236,11 @@ export default function PublicDashboard() {
   }, []);
 
   const showCountUp = !loading && stats != null;
-  const displayUsers = useCountUp(stats?.usersCount, showCountUp, reduceMotion);
-  const displayProjects = useCountUp(stats?.totalProjects, showCountUp, reduceMotion);
-  const displayOrganizations = useCountUp(stats?.organizationsCount, showCountUp, reduceMotion);
-  const displayUnis = useCountUp(stats?.universitiesCount, showCountUp, reduceMotion);
-  const displayYouth = useCountUp(stats?.youthAgencyUsersCount, showCountUp, reduceMotion);
+  const displayUsers = useCountUp(stats?.usersCount ?? 0, showCountUp, reduceMotion);
+  const displayProjects = useCountUp(stats?.totalProjects ?? 0, showCountUp, reduceMotion);
+  const displayOrganizations = useCountUp(stats?.organizationsCount ?? 0, showCountUp, reduceMotion);
+  const displayUnis = useCountUp(stats?.universitiesCount ?? 0, showCountUp, reduceMotion);
+  const displayYouth = useCountUp(stats?.youthAgencyUsersCount ?? 0, showCountUp, reduceMotion);
 
   const userGrowthData = useMemo(
     () => stats?.userGrowthByMonth ?? [],
@@ -238,10 +248,11 @@ export default function PublicDashboard() {
   );
   const pieData = useMemo(() => {
     if (!stats) return [];
+    const ps = stats.projectsByStatus;
     return [
-      { name: t('status.pending'), value: stats.projectsByStatus.jarayonda, color: CHART_COLORS[0] },
-      { name: t('status.accepted'), value: stats.projectsByStatus.qabulQilindi, color: CHART_COLORS[1] },
-      { name: t('status.rejected'), value: stats.projectsByStatus.radEtildi, color: CHART_COLORS[2] },
+      { name: t('status.pending'), value: ps.jarayonda ?? 0, color: CHART_COLORS[0] },
+      { name: t('status.accepted'), value: ps.qabulQilindi ?? 0, color: CHART_COLORS[1] },
+      { name: t('status.rejected'), value: ps.radEtildi ?? 0, color: CHART_COLORS[2] },
     ].filter((d) => d.value > 0);
   }, [stats?.projectsByStatus, t]);
 
