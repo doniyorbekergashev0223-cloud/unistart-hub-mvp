@@ -154,6 +154,17 @@ export default function PublicDashboard() {
   const [error, setError] = useState<string | null>(null);
   const mainRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
+  const [localeMenuOpen, setLocaleMenuOpen] = useState(false);
+  const localeMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!localeMenuOpen) return;
+    const handle = (e: MouseEvent) => {
+      if (localeMenuRef.current && !localeMenuRef.current.contains(e.target as Node)) setLocaleMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [localeMenuOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -242,7 +253,7 @@ export default function PublicDashboard() {
             UniStart <span className="logo-orange">Hub</span>
           </Link>
           <div className="public-header-actions">
-            <div className="locale-switcher" role="group" aria-label={t('public.languageLabel')}>
+            <div className="public-locale-desktop locale-switcher" role="group" aria-label={t('public.languageLabel')}>
               {LOCALES.map(({ code, label }) => (
                 <button
                   key={code}
@@ -255,6 +266,37 @@ export default function PublicDashboard() {
                   {label}
                 </button>
               ))}
+            </div>
+            <div className="public-locale-mobile" ref={localeMenuRef}>
+              <button
+                type="button"
+                className="public-locale-trigger locale-btn active"
+                onClick={() => setLocaleMenuOpen((o) => !o)}
+                aria-expanded={localeMenuOpen}
+                aria-haspopup="listbox"
+                aria-label={t('public.languageLabel')}
+              >
+                {LOCALES.find((l) => l.code === locale)?.label ?? locale.toUpperCase()}
+              </button>
+              {localeMenuOpen && (
+                <div className="public-locale-dropdown" role="listbox">
+                  {LOCALES.map(({ code, label }) => (
+                    <button
+                      key={code}
+                      type="button"
+                      role="option"
+                      aria-selected={locale === code}
+                      className={`public-locale-option ${locale === code ? 'active' : ''}`}
+                      onClick={() => {
+                        setLocale(code);
+                        setLocaleMenuOpen(false);
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <Link href="/auth/login" className="public-btn public-btn-outline">
               {t('public.login')}
