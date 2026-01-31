@@ -171,7 +171,7 @@ export default function PublicDashboard() {
     let retrying = false;
     const load = (retry = false) => {
       fetch('/api/public/stats', {
-        cache: 'default',
+        cache: 'no-store',
         headers: { Accept: 'application/json' },
       })
         .then((res) => {
@@ -393,11 +393,11 @@ export default function PublicDashboard() {
                   <Image
                     src={org.logoUrl}
                     alt={org.name}
-                    width={64}
-                    height={64}
+                    width={200}
+                    height={80}
                     className="public-logo-img"
                     loading="lazy"
-                    sizes="64px"
+                    sizes="(max-width: 767px) 48px, 200px"
                   />
                 </div>
                 <span className="public-logo-name">{org.name}</span>

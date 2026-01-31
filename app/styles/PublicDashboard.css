@@ -209,10 +209,13 @@
   }
 
   .public-header-inner {
-    padding: 0.75rem 1rem;
+    padding: 1rem 1.25rem;
     flex-wrap: wrap;
     gap: 0.75rem;
     align-items: center;
+    min-height: 56px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .public-logo {
@@ -401,6 +404,10 @@
     line-height: 1.35;
   }
 
+  .public-header {
+    width: 100%;
+  }
+
   .public-charts-grid {
     grid-template-columns: 1fr;
     gap: var(--section-margin-bottom-mobile);
@@ -574,10 +581,10 @@
   border-color: var(--color-primary-accent-soft);
 }
 
-/* ——— 2) HAMKOR TASHKILOTLAR ——— logo + nom yonma-yon, 6 ustun */
+/* ——— 2) HAMKOR TASHKILOTLAR ——— desktop: 3 ustun, logo ustida */
 .public-logos-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--grid-gap);
 }
 
@@ -589,14 +596,14 @@
   box-shadow: var(--shadow-card);
   padding: var(--card-padding);
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--space-md);
+  gap: var(--space-lg);
   transition: transform 0.35s var(--ease-out), box-shadow 0.35s ease, border-color 0.35s ease;
   position: relative;
   overflow: hidden;
-  text-align: left;
+  text-align: center;
 }
 
 /* Shine sweep on hover */
@@ -632,12 +639,10 @@
   }
 }
 
-/* Logo ramka — logolar yonida nom */
+/* Logo ramka — desktop: katta logo ustida */
 .public-logo-img-wrap {
-  width: 64px;
-  height: 64px;
-  min-width: 64px;
-  min-height: 64px;
+  width: 200px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -645,20 +650,25 @@
 }
 
 .public-logo-item--larger .public-logo-img-wrap {
-  width: 64px;
-  height: 64px;
+  width: 220px;
+  height: 88px;
 }
 
 .public-logo-img,
 .public-logo-item--larger .public-logo-img {
   width: 100%;
   height: 100%;
-  max-width: 64px;
-  max-height: 64px;
+  max-width: 200px;
+  max-height: 80px;
   object-fit: contain;
   object-position: center;
   opacity: 1;
   transition: transform 0.35s var(--ease-out);
+}
+
+.public-logo-item--larger .public-logo-img {
+  max-width: 220px;
+  max-height: 88px;
 }
 
 .public-logo-item:hover .public-logo-img {
@@ -666,8 +676,8 @@
 }
 
 .public-logo-fallback {
-  width: 64px;
-  height: 64px;
+  width: 200px;
+  height: 80px;
   background: rgba(248, 250, 252, 0.8);
   border-radius: var(--radius-button);
   display: flex;
@@ -682,15 +692,7 @@
   font-size: 0.8125rem;
   font-weight: var(--font-weight-semibold);
   color: var(--pd-text-secondary);
-  text-align: left;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
+  text-align: center;
   line-height: 1.35;
 }
 
