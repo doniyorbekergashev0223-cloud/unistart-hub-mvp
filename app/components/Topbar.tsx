@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { useProjects } from '../context/ProjectsContext';
 import { useTranslation, useLocale, type Locale } from '../context/LocaleContext';
 import '../styles/Topbar.css';
 
@@ -39,7 +38,6 @@ const NOTIFICATION_TITLE_TO_KEY: Record<string, string> = {
 
 const Topbar = () => {
   const { user, organization, logout, isAuthenticated } = useAuth();
-  const { searchProjects, isSearching } = useProjects();
   const { t, locale, setLocale } = useLocale();
   const router = useRouter();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -47,9 +45,7 @@ const Topbar = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleLogout = () => {
     logout();
@@ -134,28 +130,6 @@ const Topbar = () => {
       };
     }
   }, [isAuthenticated, user]);
-
-  // Handle search with debouncing
-  useEffect(() => {
-    // Clear previous timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    // Set new timeout for debounced search
-    searchTimeoutRef.current = setTimeout(() => {
-      if (isAuthenticated) {
-        searchProjects(searchValue);
-      }
-    }, 300);
-
-    // Cleanup
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchValue, isAuthenticated, searchProjects]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -282,25 +256,6 @@ const Topbar = () => {
             <span className="topbar-org-name">{organization.name}</span>
           </div>
         )}
-        <div className="search-container">
-          <input
-            type="text"
-            placeholder={t('topbar.searchPlaceholder')}
-            className="search-input"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-          />
-          <button className="search-button" disabled={isSearching}>
-            {isSearching ? (
-              <div className="search-loading-spinner"></div>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.35-4.35"></path>
-              </svg>
-            )}
-          </button>
-        </div>
       </div>
 
       <div className="topbar-right">
