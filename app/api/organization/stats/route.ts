@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { prismaDirect } from '@/lib/prismaDirect'
 import { getSession } from '@/lib/auth'
+import { getStats, setStats, orgStatsKey } from '@/lib/statsCache'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -41,43 +42,58 @@ function jsonError(status: number, code: string, message: string) {
 }
 
 export async function GET(req: Request) {
-  const session = await getSession(req)
-  if (!session) {
-    return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.")
-  }
-
-  if (!prisma) {
-    return emptyData(session.role)
-  }
-
-  const dbUser = await prisma.user.findUnique({
-    where: { id: session.userId },
-    select: { organizationId: true },
-  })
-
-  if (!dbUser?.organizationId) {
-    return emptyData(session.role)
-  }
-
-  const orgId = dbUser.organizationId
-  const isUserRole = session.role === 'user'
-
-  const projectWhere = isUserRole
-    ? { userId: session.userId, user: { organizationId: orgId } }
-    : { user: { organizationId: orgId } }
-
   try {
+    const session = await getSession(req)
+    if (!session) {
+      return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.")
+    }
+
+    if (!prismaDirect) {
+      return emptyData(session.role)
+    }
+
+    const dbUser = await prismaDirect.user.findUnique({
+      where: { id: session.userId },
+      select: { organizationId: true },
+    })
+
+    if (!dbUser?.organizationId) {
+      return emptyData(session.role)
+    }
+
+    const orgId = dbUser.organizationId
+    const isUserRole = session.role === 'user'
+    const cacheKey = orgStatsKey(orgId, session.role, session.userId)
+    let cached: { ok: true; data: Record<string, unknown> } | null = null
+    try {
+      cached = getStats(cacheKey)
+    } catch {
+      // cache read failed, proceed to DB
+    }
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          Pragma: 'no-cache',
+        },
+      })
+    }
+
+    const projectWhere = isUserRole
+      ? { userId: session.userId, user: { organizationId: orgId } }
+      : { user: { organizationId: orgId } }
+
     const [usersCount, totalProjects, statusGroups, projectDates] = await Promise.all([
       isUserRole
         ? Promise.resolve(0)
-        : prisma.user.count({ where: { organizationId: orgId } }),
-      prisma.project.count({ where: projectWhere }),
-      prisma.project.groupBy({
+        : prismaDirect.user.count({ where: { organizationId: orgId } }),
+      prismaDirect.project.count({ where: projectWhere }),
+      prismaDirect.project.groupBy({
         by: ['status'],
         where: projectWhere,
         _count: { id: true },
       }),
-      prisma.project.findMany({
+      prismaDirect.project.findMany({
         where: projectWhere,
         select: { createdAt: true },
       }),
@@ -121,8 +137,14 @@ export async function GET(req: Request) {
       data.usersCount = usersCount
     }
 
+    const payload = { ok: true as const, data }
+    try {
+      setStats(cacheKey, payload)
+    } catch {
+      // cache write failed, response still valid
+    }
     return NextResponse.json(
-      { ok: true, data },
+      payload,
       {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
@@ -134,6 +156,6 @@ export async function GET(req: Request) {
     if (process.env.NODE_ENV === 'development') {
       console.error('Organization stats error:', err)
     }
-    return emptyData(session.role)
+    return emptyData('user')
   }
 }

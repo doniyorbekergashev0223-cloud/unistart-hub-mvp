@@ -38,6 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const comments = await prisma.projectComment.findMany({
       where: { projectId: id },
       orderBy: { createdAt: 'desc' },
+      select: { id: true, content: true, authorRole: true, createdAt: true },
     })
 
     // Format comments as reviews (since ProjectReview model doesn't exist)

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { prismaDirect } from '@/lib/prismaDirect'
 import { getSession } from '@/lib/auth'
+import { getStats, setStats, dashboardStatsKey } from '@/lib/statsCache'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -39,51 +40,73 @@ function jsonError(status: number, code: string, message: string) {
 }
 
 export async function GET(req: Request) {
-  const session = await getSession(req)
-  if (!session) {
-    return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.")
-  }
-
-  if (!prisma) {
-    return emptyStats()
-  }
-
-  const dbUser = await prisma.user.findUnique({
-    where: { id: session.userId },
-    select: { organizationId: true },
-  })
-
-  if (!dbUser?.organizationId) {
-    return emptyStats()
-  }
-
-  const orgId = dbUser.organizationId
-
   try {
+    const session = await getSession(req)
+    if (!session) {
+      return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.")
+    }
+
+    if (!prismaDirect) {
+      return emptyStats()
+    }
+
+    const dbUser = await prismaDirect.user.findUnique({
+      where: { id: session.userId },
+      select: { organizationId: true },
+    })
+
+    if (!dbUser?.organizationId) {
+      return emptyStats()
+    }
+
+    const orgId = dbUser.organizationId
+    const cacheKey = dashboardStatsKey(orgId)
+    let cached: { ok: true; data: { usersCount: number; totalProjects: number; activeProjects: number; rejectedProjects: number } } | null = null
+    try {
+      cached = getStats(cacheKey)
+    } catch {
+      // cache read failed, proceed to DB
+    }
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      })
+    }
+
     const orgWhereProject = { user: { organizationId: orgId } }
     const orgWhereUser = { organizationId: orgId }
 
     const [usersCount, totalProjects, activeProjects, rejectedProjects] = await Promise.all([
-      prisma.user.count({ where: orgWhereUser }),
-      prisma.project.count({ where: orgWhereProject }),
-      prisma.project.count({
+      prismaDirect.user.count({ where: orgWhereUser }),
+      prismaDirect.project.count({ where: orgWhereProject }),
+      prismaDirect.project.count({
         where: { ...orgWhereProject, status: 'JARAYONDA' },
       }),
-      prisma.project.count({
+      prismaDirect.project.count({
         where: { ...orgWhereProject, status: 'RAD_ETILDI' },
       }),
     ])
 
-    return NextResponse.json(
-      {
-        ok: true,
-        data: {
-          usersCount,
-          totalProjects,
-          activeProjects,
-          rejectedProjects,
-        },
+    const payload = {
+      ok: true as const,
+      data: {
+        usersCount,
+        totalProjects,
+        activeProjects,
+        rejectedProjects,
       },
+    }
+    try {
+      setStats(cacheKey, payload)
+    } catch {
+      // cache write failed, response still valid
+    }
+    return NextResponse.json(
+      payload,
       {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',

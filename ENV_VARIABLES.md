@@ -17,15 +17,18 @@ JWT_SECRET="your-secret-at-least-16-chars"
 
 ### Database (Supabase PostgreSQL)
 
+Use two URLs for scalable connections:
+
 ```env
-DATABASE_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@[HOST]:5432/postgres"
+DATABASE_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@[HOST]:6543/postgres?pgbouncer=true"
+DATABASE_DIRECT_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@[HOST]:5432/postgres"
 ```
 
 **Important:**
-- Use **Direct Postgres connection** (port 5432), NOT Session Pooler (port 6543)
-- Get this from: Supabase Dashboard > Settings > Database > Connection string > Direct connection
-- Format: `postgresql://postgres.[PROJECT_REF]:[PASSWORD]@[HOST]:5432/postgres`
-- Do NOT use `pgbouncer=true` or port 6543
+- **DATABASE_URL**: Session pooler (port 6543, `?pgbouncer=true`) — used for auth, register, simple CRUD.
+- **DATABASE_DIRECT_URL**: Direct connection (port 5432) — used for statistics, analytics, heavy queries.
+- Get both from: Supabase Dashboard > Settings > Database > Connection string (Session pooler vs Direct).
+- Do not remove DATABASE_URL.
 
 ### Supabase Storage
 

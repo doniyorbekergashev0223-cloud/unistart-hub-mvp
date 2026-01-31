@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
           id: notificationId,
           userId: actor.userId,
         },
+        select: { id: true },
       })
     } catch (dbError: any) {
       console.error('Database query error in notifications/read (find):', dbError)

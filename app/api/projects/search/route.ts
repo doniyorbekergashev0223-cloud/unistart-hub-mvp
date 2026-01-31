@@ -90,7 +90,14 @@ export async function GET(req: Request) {
     const projects = await prisma.project.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        contact: true,
+        status: true,
+        createdAt: true,
+        userId: true,
         user: {
           select: { id: true, name: true, email: true, role: true },
         },

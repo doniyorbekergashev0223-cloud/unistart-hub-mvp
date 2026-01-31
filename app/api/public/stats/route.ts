@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { prismaDirect } from '@/lib/prismaDirect'
+import { getStats, setStats, publicStatsKey } from '@/lib/statsCache'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -32,26 +33,39 @@ function emptyResponse() {
 }
 
 export async function GET() {
-  if (!prisma) {
-    return emptyResponse()
-  }
-
   try {
-    await prisma.$queryRaw`SELECT 1`
-  } catch {
-    return emptyResponse()
-  }
+    if (!prismaDirect) {
+      return emptyResponse()
+    }
 
-  try {
+    const cacheKey = publicStatsKey()
+    let cached: { ok: true; data: Record<string, unknown> } | null = null
+    try {
+      cached = getStats(cacheKey)
+    } catch {
+      // cache read failed, proceed to DB
+    }
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' },
+      })
+    }
+
+    try {
+      await prismaDirect.$queryRaw`SELECT 1`
+    } catch {
+      return emptyResponse()
+    }
+
     const [usersCount, totalProjects, userDates, statusCounts, youthAgencyUsersCount] = await Promise.all([
-      prisma.user.count(),
-      prisma.project.count(),
-      prisma.user.findMany({ select: { createdAt: true } }),
-      prisma.project.groupBy({
+      prismaDirect.user.count(),
+      prismaDirect.project.count(),
+      prismaDirect.user.findMany({ select: { createdAt: true } }),
+      prismaDirect.project.groupBy({
         by: ['status'],
         _count: { id: true },
       }),
-      prisma.user.count({
+      prismaDirect.user.count({
         where: { organization: { slug: 'youth-agency' } },
       }),
     ])
@@ -85,19 +99,25 @@ export async function GET() {
       radEtildi: statusMap.RAD_ETILDI ?? 0,
     }
 
-    return NextResponse.json(
-      {
-        ok: true,
-        data: {
-          usersCount,
-          totalProjects,
-          organizationsCount: JAMI_TASHKILOTLAR,
-          universitiesCount: PARTNER_UNIVERSITIES_COUNT,
-          youthAgencyUsersCount,
-          userGrowthByMonth,
-          projectsByStatus,
-        },
+    const payload = {
+      ok: true as const,
+      data: {
+        usersCount,
+        totalProjects,
+        organizationsCount: JAMI_TASHKILOTLAR,
+        universitiesCount: PARTNER_UNIVERSITIES_COUNT,
+        youthAgencyUsersCount,
+        userGrowthByMonth,
+        projectsByStatus,
       },
+    }
+    try {
+      setStats(cacheKey, payload)
+    } catch {
+      // cache write failed, response still valid
+    }
+    return NextResponse.json(
+      payload,
       {
         headers: {
           'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',

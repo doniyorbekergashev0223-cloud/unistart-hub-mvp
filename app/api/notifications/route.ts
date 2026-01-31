@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
       notifications = await prisma.notification.findMany({
         where: { userId: actor.userId },
         orderBy: { createdAt: 'desc' },
+        select: { id: true, title: true, message: true, isRead: true, createdAt: true },
       })
     } catch (dbError: any) {
       console.error('Database query error in notifications:', dbError)

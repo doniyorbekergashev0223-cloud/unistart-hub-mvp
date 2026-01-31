@@ -62,7 +62,15 @@ export async function GET(
         id,
         user: { organizationId: orgId },
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        contact: true,
+        status: true,
+        fileUrl: true,
+        createdAt: true,
+        userId: true,
         user: {
           select: {
             id: true,
@@ -73,6 +81,7 @@ export async function GET(
         },
         comments: {
           orderBy: { createdAt: 'asc' },
+          select: { id: true, content: true, authorRole: true, createdAt: true },
         },
       },
     })
