@@ -51,7 +51,7 @@ const Sidebar = () => {
     <div className="sidebar">
       <div className="sidebar-header">
         <Link href="/dashboard" className="logo" style={{ textDecoration: 'none', color: 'inherit' }}>
-          UniStart <span className="logo-orange">Hub</span>
+          {t('nav.logoPart1')} <span className="logo-orange">{t('nav.logoPart2')}</span>
         </Link>
       </div>
 

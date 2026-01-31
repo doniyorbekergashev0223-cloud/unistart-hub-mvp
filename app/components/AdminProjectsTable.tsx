@@ -38,9 +38,9 @@ const AdminProjectsTable = () => {
   return (
     <div className="table-container admin-projects-table-container">
       <div className="table-header">
-        <h3>Barcha loyihalar</h3>
+        <h3>{t('adminProjectsTable.title')}</h3>
         <p className="admin-projects-table-description">
-          Tashkilotdagi barcha loyihalar. Batafsil ko&apos;rish uchun qatorni bosing.
+          {t('adminProjectsTable.description')}
         </p>
       </div>
 
@@ -49,11 +49,11 @@ const AdminProjectsTable = () => {
           <table className="admin-projects-table" role="grid">
             <thead className="admin-projects-thead">
               <tr>
-                <th scope="col">Loyiha nomi</th>
-                <th scope="col">Muallif</th>
-                <th scope="col">Sana</th>
-                <th scope="col">Holat</th>
-                <th scope="col">Tayinlangan ekspert</th>
+                <th scope="col">{t('adminProjectsTable.columnProjectName')}</th>
+                <th scope="col">{t('adminProjectsTable.columnAuthor')}</th>
+                <th scope="col">{t('adminProjectsTable.columnDate')}</th>
+                <th scope="col">{t('adminProjectsTable.columnStatus')}</th>
+                <th scope="col">{t('adminProjectsTable.columnAssignedExpert')}</th>
               </tr>
             </thead>
             <tbody className="admin-projects-tbody">
@@ -63,21 +63,21 @@ const AdminProjectsTable = () => {
                   onClick={() => handleRowClick(project.id)}
                   className="admin-projects-row"
                 >
-                  <td data-label="Loyiha nomi" className="admin-projects-cell admin-projects-cell-name">
+                  <td data-label={t('adminProjectsTable.columnProjectName')} className="admin-projects-cell admin-projects-cell-name">
                     {project.name}
                   </td>
-                  <td data-label="Muallif" className="admin-projects-cell">
+                  <td data-label={t('adminProjectsTable.columnAuthor')} className="admin-projects-cell">
                     {project.user}
                   </td>
-                  <td data-label="Sana" className="admin-projects-cell">
+                  <td data-label={t('adminProjectsTable.columnDate')} className="admin-projects-cell">
                     {project.date}
                   </td>
-                  <td data-label="Holat" className="admin-projects-cell">
+                  <td data-label={t('adminProjectsTable.columnStatus')} className="admin-projects-cell">
                     <span className={`status-badge ${getStatusClass(project.status)}`}>
                       {t(STATUS_TO_KEY[project.status] ?? 'status.pending')}
                     </span>
                   </td>
-                  <td data-label="Tayinlangan ekspert" className="admin-projects-cell">
+                  <td data-label={t('adminProjectsTable.columnAssignedExpert')} className="admin-projects-cell">
                     —
                   </td>
                 </tr>
@@ -87,11 +87,11 @@ const AdminProjectsTable = () => {
         </div>
       ) : isSearching ? (
         <div className="no-projects admin-projects-empty">
-          <p>Yuklanmoqda...</p>
+          <p>{t('adminProjectsTable.loading')}</p>
         </div>
       ) : (
         <div className="no-projects admin-projects-empty">
-          <p>Tashkilotda hali hech qanday loyiha yuborilmagan.</p>
+          <p>{t('adminProjectsTable.empty')}</p>
         </div>
       )}
     </div>

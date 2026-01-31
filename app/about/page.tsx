@@ -4,8 +4,10 @@ import React from 'react';
 import AuthGuard from '../components/AuthGuard';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
+import { useTranslation } from '../context/LocaleContext';
 
 export default function AboutPage() {
+  const t = useTranslation();
   return (
     <AuthGuard>
       <div className="dashboard">
@@ -14,20 +16,14 @@ export default function AboutPage() {
           <Topbar />
           <div id="main" className="dashboard-content">
             <div className="about-page">
-              {/* Hero Section */}
               <div className="about-hero">
-                <h1 className="about-title">UniStart Hub — innovatsion startap platformasi</h1>
-                <p className="about-intro">
-                  UniStart Hub — bu oliy ta'lim muassasalarida ta'lim olayotgan iqtidorli talabalar, Texnikum va maktablardagi iqtidorli o'quvchilar hamda chekka qishloqlarda yashovchi uyushmagan yoshlarning innovatsion startap tashabbuslarini aniqlash, rivojlantirish va ularni MVP darajasidagi real raqamli mahsulotlarga aylantirishga qaratilgan markazlashtirilgan raqamli platformadir.
-                </p>
-                <p className="about-intro">
-                  Loyiha yoshlarning salohiyatini yuzaga chiqarish, teng imkoniyatlar yaratish va innovatsion ekotizimni kengaytirishni maqsad qilgan.
-                </p>
+                <h1 className="about-title">{t('aboutPage.heroTitle')}</h1>
+                <p className="about-intro">{t('aboutPage.heroIntro1')}</p>
+                <p className="about-intro">{t('aboutPage.heroIntro2')}</p>
               </div>
 
-              {/* Platforma maqsadi */}
               <div className="about-section">
-                <h2 className="about-section-title">Platforma maqsadi</h2>
+                <h2 className="about-section-title">{t('aboutPage.sectionGoal')}</h2>
                 <div className="about-grid">
                   <div className="about-card">
                     <div className="about-card-icon">
@@ -37,12 +33,9 @@ export default function AboutPage() {
                         <path d="M2 12l10 5 10-5"></path>
                       </svg>
                     </div>
-                    <h3 className="about-card-title">Yoshlarning startap g'oyalarini qo'llab-quvvatlash</h3>
-                    <p className="about-card-description">
-                      Iqtidorli yoshlarning innovatsion g'oyalarini aniqlash va ularga professional yordam ko'rsatish.
-                    </p>
+                    <h3 className="about-card-title">{t('aboutPage.goalCard1Title')}</h3>
+                    <p className="about-card-description">{t('aboutPage.goalCard1Desc')}</p>
                   </div>
-
                   <div className="about-card">
                     <div className="about-card-icon">
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -50,12 +43,9 @@ export default function AboutPage() {
                         <polyline points="22 4 12 14.01 9 11.01"></polyline>
                       </svg>
                     </div>
-                    <h3 className="about-card-title">MVP darajasigacha olib chiqish</h3>
-                    <p className="about-card-description">
-                      Startap g'oyalarini MVP (Minimum Viable Product) darajasidagi real raqamli mahsulotlarga aylantirish.
-                    </p>
+                    <h3 className="about-card-title">{t('aboutPage.goalCard2Title')}</h3>
+                    <p className="about-card-description">{t('aboutPage.goalCard2Desc')}</p>
                   </div>
-
                   <div className="about-card">
                     <div className="about-card-icon">
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -65,12 +55,9 @@ export default function AboutPage() {
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                       </svg>
                     </div>
-                    <h3 className="about-card-title">Ekspertlar orqali baholash</h3>
-                    <p className="about-card-description">
-                      Professional ekspertlar tomonidan loyihalarni baholash va tahlil qilish.
-                    </p>
+                    <h3 className="about-card-title">{t('aboutPage.goalCard3Title')}</h3>
+                    <p className="about-card-description">{t('aboutPage.goalCard3Desc')}</p>
                   </div>
-
                   <div className="about-card">
                     <div className="about-card-icon">
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -79,17 +66,14 @@ export default function AboutPage() {
                         <line x1="3" y1="9" x2="21" y2="9"></line>
                       </svg>
                     </div>
-                    <h3 className="about-card-title">Shaffof va raqamli jarayon</h3>
-                    <p className="about-card-description">
-                      Barcha jarayonlar raqamlashtirilgan va shaffof, har bir qadam kuzatiladi.
-                    </p>
+                    <h3 className="about-card-title">{t('aboutPage.goalCard4Title')}</h3>
+                    <p className="about-card-description">{t('aboutPage.goalCard4Desc')}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Kimlar uchun */}
               <div className="about-section">
-                <h2 className="about-section-title">Kimlar uchun?</h2>
+                <h2 className="about-section-title">{t('aboutPage.sectionWhoFor')}</h2>
                 <div className="about-list">
                   <div className="about-list-item">
                     <div className="about-list-icon">
@@ -101,13 +85,10 @@ export default function AboutPage() {
                       </svg>
                     </div>
                     <div className="about-list-content">
-                      <h3 className="about-list-title">Universitet talabalari, Texnikum va maktab o'quvchilari</h3>
-                      <p className="about-list-description">
-                        Oliy ta'lim muassasalarida ta'lim olayotgan iqtidorli talabalar, Texnikum va maktablardagi iqtidorli o'quvchilar.
-                      </p>
+                      <h3 className="about-list-title">{t('aboutPage.whoFor1Title')}</h3>
+                      <p className="about-list-description">{t('aboutPage.whoFor1Desc')}</p>
                     </div>
                   </div>
-
                   <div className="about-list-item">
                     <div className="about-list-icon">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -116,13 +97,10 @@ export default function AboutPage() {
                       </svg>
                     </div>
                     <div className="about-list-content">
-                      <h3 className="about-list-title">Chekka hududlardagi yoshlar</h3>
-                      <p className="about-list-description">
-                        Chekka qishloqlarda yashovchi uyushmagan yoshlar.
-                      </p>
+                      <h3 className="about-list-title">{t('aboutPage.whoFor2Title')}</h3>
+                      <p className="about-list-description">{t('aboutPage.whoFor2Desc')}</p>
                     </div>
                   </div>
-
                   <div className="about-list-item">
                     <div className="about-list-icon">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -132,13 +110,10 @@ export default function AboutPage() {
                       </svg>
                     </div>
                     <div className="about-list-content">
-                      <h3 className="about-list-title">Ekspertlar</h3>
-                      <p className="about-list-description">
-                        Startap va innovatsiya sohasidagi professional ekspertlar.
-                      </p>
+                      <h3 className="about-list-title">{t('aboutPage.whoFor3Title')}</h3>
+                      <p className="about-list-description">{t('aboutPage.whoFor3Desc')}</p>
                     </div>
                   </div>
-
                   <div className="about-list-item">
                     <div className="about-list-icon">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -147,74 +122,56 @@ export default function AboutPage() {
                       </svg>
                     </div>
                     <div className="about-list-content">
-                      <h3 className="about-list-title">Innovatsion hamkorlar</h3>
-                      <p className="about-list-description">
-                        Startap ekotizimini rivojlantirishga qiziqqan tashkilotlar va hamkorlar.
-                      </p>
+                      <h3 className="about-list-title">{t('aboutPage.whoFor4Title')}</h3>
+                      <p className="about-list-description">{t('aboutPage.whoFor4Desc')}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Qanday ishlaydi */}
               <div className="about-section">
-                <h2 className="about-section-title">Qanday ishlaydi?</h2>
+                <h2 className="about-section-title">{t('aboutPage.sectionHow')}</h2>
                 <div className="about-process">
                   <div className="about-process-step">
                     <div className="about-process-number">1</div>
                     <div className="about-process-content">
-                      <h3 className="about-process-title">Loyiha yuborish</h3>
-                      <p className="about-process-description">
-                        Foydalanuvchilar o'z startap g'oyalarini platformaga yuboradi.
-                      </p>
+                      <h3 className="about-process-title">{t('aboutPage.how1Title')}</h3>
+                      <p className="about-process-description">{t('aboutPage.how1Desc')}</p>
                     </div>
                   </div>
-
                   <div className="about-process-step">
                     <div className="about-process-number">2</div>
                     <div className="about-process-content">
-                      <h3 className="about-process-title">Ko'rib chiqish</h3>
-                      <p className="about-process-description">
-                        Ekspertlar va adminlar loyihalarni batafsil ko'rib chiqadi.
-                      </p>
+                      <h3 className="about-process-title">{t('aboutPage.how2Title')}</h3>
+                      <p className="about-process-description">{t('aboutPage.how2Desc')}</p>
                     </div>
                   </div>
-
                   <div className="about-process-step">
                     <div className="about-process-number">3</div>
                     <div className="about-process-content">
-                      <h3 className="about-process-title">Status berish</h3>
-                      <p className="about-process-description">
-                        Har bir loyiha uchun aniq status belgilanadi (Qabul qilindi, Jarayonda, Rad etildi).
-                      </p>
+                      <h3 className="about-process-title">{t('aboutPage.how3Title')}</h3>
+                      <p className="about-process-description">{t('aboutPage.how3Desc')}</p>
                     </div>
                   </div>
-
                   <div className="about-process-step">
                     <div className="about-process-number">4</div>
                     <div className="about-process-content">
-                      <h3 className="about-process-title">Fikr-mulohaza</h3>
-                      <p className="about-process-description">
-                        Ekspertlar loyiha haqida batafsil fikr-mulohaza qoldiradi.
-                      </p>
+                      <h3 className="about-process-title">{t('aboutPage.how4Title')}</h3>
+                      <p className="about-process-description">{t('aboutPage.how4Desc')}</p>
                     </div>
                   </div>
-
                   <div className="about-process-step">
                     <div className="about-process-number">5</div>
                     <div className="about-process-content">
-                      <h3 className="about-process-title">Natija</h3>
-                      <p className="about-process-description">
-                        Qabul qilingan loyihalar MVP darajasigacha olib chiqiladi.
-                      </p>
+                      <h3 className="about-process-title">{t('aboutPage.how5Title')}</h3>
+                      <p className="about-process-description">{t('aboutPage.how5Desc')}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Afzalliklar */}
               <div className="about-section">
-                <h2 className="about-section-title">Afzalliklar</h2>
+                <h2 className="about-section-title">{t('aboutPage.sectionBenefits')}</h2>
                 <div className="about-grid">
                   <div className="about-card">
                     <div className="about-card-icon">
@@ -222,12 +179,9 @@ export default function AboutPage() {
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                       </svg>
                     </div>
-                    <h3 className="about-card-title">Shaffoflik</h3>
-                    <p className="about-card-description">
-                      Barcha jarayonlar shaffof va kuzatiladi, har bir qadam hujjatlashtiriladi.
-                    </p>
+                    <h3 className="about-card-title">{t('aboutPage.benefit1Title')}</h3>
+                    <p className="about-card-description">{t('aboutPage.benefit1Desc')}</p>
                   </div>
-
                   <div className="about-card">
                     <div className="about-card-icon">
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -235,12 +189,9 @@ export default function AboutPage() {
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                       </svg>
                     </div>
-                    <h3 className="about-card-title">Xavfsizlik</h3>
-                    <p className="about-card-description">
-                      Ma'lumotlar xavfsiz saqlanadi va faqat ruxsat etilgan foydalanuvchilar kirish huquqiga ega.
-                    </p>
+                    <h3 className="about-card-title">{t('aboutPage.benefit2Title')}</h3>
+                    <p className="about-card-description">{t('aboutPage.benefit2Desc')}</p>
                   </div>
-
                   <div className="about-card">
                     <div className="about-card-icon">
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -248,12 +199,9 @@ export default function AboutPage() {
                         <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                       </svg>
                     </div>
-                    <h3 className="about-card-title">Real vaqt bildirishnomalari</h3>
-                    <p className="about-card-description">
-                      Loyiha holati o'zgarganda darhol bildirishnoma olasiz.
-                    </p>
+                    <h3 className="about-card-title">{t('aboutPage.benefit3Title')}</h3>
+                    <p className="about-card-description">{t('aboutPage.benefit3Desc')}</p>
                   </div>
-
                   <div className="about-card">
                     <div className="about-card-icon">
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -262,10 +210,8 @@ export default function AboutPage() {
                         <line x1="3" y1="9" x2="21" y2="9"></line>
                       </svg>
                     </div>
-                    <h3 className="about-card-title">Professional boshqaruv</h3>
-                    <p className="about-card-description">
-                      Barcha loyihalar professional darajada boshqariladi va kuzatiladi.
-                    </p>
+                    <h3 className="about-card-title">{t('aboutPage.benefit4Title')}</h3>
+                    <p className="about-card-description">{t('aboutPage.benefit4Desc')}</p>
                   </div>
                 </div>
               </div>

@@ -100,23 +100,23 @@ const StatisticsCards = () => {
       if (!isMountedRef.current || abortControllerRef.current.signal.aborted) return;
 
       if (!response.ok || !result || !result.ok) {
-        throw new Error(result?.error?.message || 'Statistika yuklanmadi');
+        setError('dashboard.statsLoadError');
+        return;
       }
 
       if (result.data) {
         setStats(result.data);
         setError(null);
       } else {
-        throw new Error('Statistika ma\'lumotlari topilmadi');
+        setError('dashboard.statsDataNotFound');
       }
     } catch (err: any) {
       if (!isMountedRef.current || abortControllerRef.current.signal.aborted) return;
       
-      // Ignore abort errors
       if (err.name === 'AbortError') return;
       
       console.error('Failed to fetch dashboard stats:', err);
-      setError('Statistika yuklanmadi');
+      setError('dashboard.statsLoadError');
       // Set default values for graceful degradation
       setStats({
         usersCount: 0,
@@ -129,7 +129,7 @@ const StatisticsCards = () => {
         setLoading(false);
       }
     }
-  }, [user?.id, user?.role]);
+  }, [user?.id, user?.role, t]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -195,7 +195,7 @@ const StatisticsCards = () => {
       <h2 className="stats-title">{t('statsCards.title')}</h2>
       {error && (
         <div className="stats-error">
-          <p>{error}</p>
+          <p>{t(error)}</p>
         </div>
       )}
       <div className="stats-grid">

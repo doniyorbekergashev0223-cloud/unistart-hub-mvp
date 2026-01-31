@@ -4,8 +4,10 @@ import React from 'react';
 import AuthGuard from '../components/AuthGuard';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
+import { useTranslation } from '../context/LocaleContext';
 
 export default function DevelopersPage() {
+  const t = useTranslation();
   return (
     <AuthGuard>
       <div className="dashboard">
@@ -14,7 +16,6 @@ export default function DevelopersPage() {
           <Topbar />
           <div id="main" className="dashboard-content">
             <div className="founder-page">
-              {/* Hero Section */}
               <div className="founder-hero">
                 <div className="founder-avatar-placeholder">
                   <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -22,34 +23,21 @@ export default function DevelopersPage() {
                     <circle cx="12" cy="7" r="4"></circle>
                   </svg>
                 </div>
-                <h1 className="founder-title">Loyiha asoschisi</h1>
-                <h2 className="founder-name">Doniyor Ergashev</h2>
-                <p className="founder-subtitle">
-                  UniStart Hub platformasi asoschisi va loyiha rahbari
-                </p>
+                <h1 className="founder-title">{t('developersPage.heroTitle')}</h1>
+                <h2 className="founder-name">{t('developersPage.heroName')}</h2>
+                <p className="founder-subtitle">{t('developersPage.heroSubtitle')}</p>
               </div>
 
-              {/* Men haqimda Section */}
               <div className="founder-section">
-                <h2 className="founder-section-title">Men haqimda</h2>
+                <h2 className="founder-section-title">{t('developersPage.sectionAbout')}</h2>
                 <div className="founder-card">
-                  <p className="founder-text">
-                    Men — Doniyor Ergashev, UniStart Hub platformasi asoschisi va loyiha rahbariman.
-                    Ushbu platforma universitetlarda tahsil olayotgan iqtidorli talabalar hamda
-                    chekka hududlarda yashovchi uyushmagan yoshlarning startap g'oyalarini
-                    real ishlaydigan MVP mahsulotlarga aylantirish maqsadida yaratilgan.
-                  </p>
-                  <p className="founder-text">
-                    Loyiha orqali yoshlarning salohiyatini yuzaga chiqarish,
-                    ular uchun teng imkoniyatlar yaratish va innovatsion muhitni
-                    kengaytirish asosiy maqsadim hisoblanadi.
-                  </p>
+                  <p className="founder-text">{t('developersPage.aboutText1')}</p>
+                  <p className="founder-text">{t('developersPage.aboutText2')}</p>
                 </div>
               </div>
 
-              {/* Motivation Section */}
               <div className="founder-section">
-                <h2 className="founder-section-title">Nega UniStart Hub?</h2>
+                <h2 className="founder-section-title">{t('developersPage.sectionWhy')}</h2>
                 <div className="founder-card">
                   <ul className="founder-list">
                     <li className="founder-list-item">
@@ -59,7 +47,7 @@ export default function DevelopersPage() {
                           <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
                       </div>
-                      <span>Yoshlar g'oyalari ko'pincha e'tiborsiz qolib ketadi</span>
+                      <span>{t('developersPage.why1')}</span>
                     </li>
                     <li className="founder-list-item">
                       <div className="founder-list-icon">
@@ -68,7 +56,7 @@ export default function DevelopersPage() {
                           <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
                       </div>
-                      <span>Chekka hududlarda imkoniyatlar yetishmaydi</span>
+                      <span>{t('developersPage.why2')}</span>
                     </li>
                     <li className="founder-list-item">
                       <div className="founder-list-icon">
@@ -77,7 +65,7 @@ export default function DevelopersPage() {
                           <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
                       </div>
-                      <span>Tajribali yo'l-yo'riq va ekspert fikri zarur</span>
+                      <span>{t('developersPage.why3')}</span>
                     </li>
                     <li className="founder-list-item">
                       <div className="founder-list-icon">
@@ -86,15 +74,14 @@ export default function DevelopersPage() {
                           <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
                       </div>
-                      <span>UniStart Hub bu bo'shliqni to'ldirish uchun yaratilgan</span>
+                      <span>{t('developersPage.why4')}</span>
                     </li>
                   </ul>
                 </div>
               </div>
 
-              {/* Role Section */}
               <div className="founder-section">
-                <h2 className="founder-section-title">Rolim va mas'uliyatim</h2>
+                <h2 className="founder-section-title">{t('developersPage.sectionRole')}</h2>
                 <div className="founder-grid">
                   <div className="founder-grid-item">
                     <div className="founder-grid-icon">
@@ -104,7 +91,7 @@ export default function DevelopersPage() {
                         <path d="M2 12l10 5 10-5"></path>
                       </svg>
                     </div>
-                    <h3 className="founder-grid-title">Platforma konsepsiyasini ishlab chiqish</h3>
+                    <h3 className="founder-grid-title">{t('developersPage.role1')}</h3>
                   </div>
                   <div className="founder-grid-item">
                     <div className="founder-grid-icon">
@@ -114,7 +101,7 @@ export default function DevelopersPage() {
                         <line x1="3" y1="9" x2="21" y2="9"></line>
                       </svg>
                     </div>
-                    <h3 className="founder-grid-title">Jarayonlarni boshqarish</h3>
+                    <h3 className="founder-grid-title">{t('developersPage.role2')}</h3>
                   </div>
                   <div className="founder-grid-item">
                     <div className="founder-grid-icon">
@@ -125,7 +112,7 @@ export default function DevelopersPage() {
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                       </svg>
                     </div>
-                    <h3 className="founder-grid-title">Ekspertlar bilan ishlash</h3>
+                    <h3 className="founder-grid-title">{t('developersPage.role3')}</h3>
                   </div>
                   <div className="founder-grid-item">
                     <div className="founder-grid-icon">
@@ -134,14 +121,13 @@ export default function DevelopersPage() {
                         <polyline points="22 4 12 14.01 9 11.01"></polyline>
                       </svg>
                     </div>
-                    <h3 className="founder-grid-title">Loyiha rivojini nazorat qilish</h3>
+                    <h3 className="founder-grid-title">{t('developersPage.role4')}</h3>
                   </div>
                 </div>
               </div>
 
-              {/* Future Goals Section */}
               <div className="founder-section">
-                <h2 className="founder-section-title">Kelajak rejalar</h2>
+                <h2 className="founder-section-title">{t('developersPage.sectionGoals')}</h2>
                 <div className="founder-card">
                   <div className="founder-goals">
                     <div className="founder-goal-item">
@@ -151,7 +137,7 @@ export default function DevelopersPage() {
                           <circle cx="12" cy="10" r="3"></circle>
                         </svg>
                       </div>
-                      <span>UniStart Hub'ni respublika miqyosida kengaytirish</span>
+                      <span>{t('developersPage.goal1')}</span>
                     </div>
                     <div className="founder-goal-item">
                       <div className="founder-goal-icon">
@@ -161,7 +147,7 @@ export default function DevelopersPage() {
                           <path d="M2 12l10 5 10-5"></path>
                         </svg>
                       </div>
-                      <span>Universitetlar bilan hamkorlik</span>
+                      <span>{t('developersPage.goal2')}</span>
                     </div>
                     <div className="founder-goal-item">
                       <div className="founder-goal-icon">
@@ -170,7 +156,7 @@ export default function DevelopersPage() {
                           <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                         </svg>
                       </div>
-                      <span>Startaplarni real bozorga olib chiqish</span>
+                      <span>{t('developersPage.goal3')}</span>
                     </div>
                     <div className="founder-goal-item">
                       <div className="founder-goal-icon">
@@ -180,16 +166,15 @@ export default function DevelopersPage() {
                           <line x1="12" y1="22.08" x2="12" y2="12"></line>
                         </svg>
                       </div>
-                      <span>Yoshlar uchun barqaror innovatsion ekotizim yaratish</span>
+                      <span>{t('developersPage.goal4')}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Contact Section */}
               <div className="founder-section">
                 <div className="founder-contact-card">
-                  <h2 className="founder-contact-title">Aloqa</h2>
+                  <h2 className="founder-contact-title">{t('developersPage.contactTitle')}</h2>
                   <div className="founder-contact-info">
                     <div className="founder-contact-item">
                       <div className="founder-contact-icon">
@@ -199,7 +184,7 @@ export default function DevelopersPage() {
                         </svg>
                       </div>
                       <div className="founder-contact-content">
-                        <div className="founder-contact-label">Email</div>
+                        <div className="founder-contact-label">{t('developersPage.contactEmail')}</div>
                         <div className="founder-contact-value">unistart.hub@gmail.com</div>
                       </div>
                     </div>
@@ -210,7 +195,7 @@ export default function DevelopersPage() {
                         </svg>
                       </div>
                       <div className="founder-contact-content">
-                        <div className="founder-contact-label">Telegram</div>
+                        <div className="founder-contact-label">{t('developersPage.contactTelegram')}</div>
                         <div className="founder-contact-value">@dn_ergashev</div>
                       </div>
                     </div>
