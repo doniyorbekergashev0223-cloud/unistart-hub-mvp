@@ -213,6 +213,9 @@
     max-width: 100%;
     width: 100%;
     box-sizing: border-box;
+    overflow-x: hidden;
+    padding-left: var(--content-padding-mobile);
+    padding-right: var(--content-padding-mobile);
   }
 
   .public-header {
@@ -326,6 +329,7 @@
   .public-main {
     padding: var(--content-padding-mobile);
     padding-bottom: max(var(--content-padding-mobile), env(safe-area-inset-bottom));
+    overflow-x: hidden;
   }
 
   .public-section {
@@ -335,6 +339,9 @@
   .public-section-title {
     font-size: var(--font-size-h2-mobile);
     margin-bottom: var(--title-margin-bottom-mobile);
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .public-section-title-large {
@@ -373,7 +380,7 @@
     min-width: 0;
   }
 
-  /* Mobile: org cards match stat card layout — text left, logo/icon right, same structure */
+  /* Mobile: tashkilot kartalari — Platforma statistikasi kartalariga o‘xshash: matn chapda, logo o‘ngda */
   .public-logo-item {
     display: flex;
     flex-direction: row;
@@ -403,7 +410,7 @@
     order: 1;
     flex: 1;
     min-width: 0;
-    padding-right: var(--space-md);
+    padding-right: 0;
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-semibold);
     color: var(--pd-text);
@@ -423,7 +430,7 @@
     height: var(--stat-icon-size-mobile);
     min-width: var(--stat-icon-size-mobile);
     min-height: var(--stat-icon-size-mobile);
-    margin-left: 0;
+    margin-left: var(--stat-icon-gap);
     border-radius: var(--radius-icon);
     background: linear-gradient(135deg, var(--color-primary-tint) 0%, var(--color-primary-tint-dark) 100%);
     border: 1px solid var(--color-primary-accent-border);
@@ -432,7 +439,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    padding: 0.375rem;
+    padding: 0;
     box-sizing: border-box;
   }
 
@@ -461,9 +468,21 @@
     padding: var(--content-padding-mobile);
   }
 
+  .public-charts-section {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
   .public-charts-grid {
     grid-template-columns: 1fr;
     gap: var(--section-margin-bottom-mobile);
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .public-chart-card {
@@ -490,6 +509,12 @@
     width: 100% !important;
     max-width: 100%;
     min-width: 0;
+  }
+
+  .public-chart-title {
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .public-about-content,
