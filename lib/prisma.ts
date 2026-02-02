@@ -13,7 +13,7 @@ function validateDatabaseUrl(url: string): { valid: boolean; normalized?: string
     const urlObj = new URL(trimmed)
     if (urlObj.protocol !== 'postgresql:' && urlObj.protocol !== 'postgres:') return { valid: false, error: `Invalid protocol: ${urlObj.protocol}` }
     const sep = trimmed.includes('?') ? '&' : '?'
-    const normalized = `${trimmed}${sep}connection_limit=3`
+    const normalized = `${trimmed}${sep}connection_limit=2`
     return { valid: true, normalized }
   } catch (e: unknown) {
     return { valid: false, error: `Invalid DATABASE_URL format: ${(e as Error).message}` }

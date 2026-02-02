@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { prismaDirect } from '@/lib/prismaDirect'
 import { getSession } from '@/lib/auth'
 import { getStats, setStats, orgStatsKey } from '@/lib/statsCache'
 
@@ -82,18 +83,19 @@ export async function GET(req: Request) {
     const projectWhere = isUserRole
       ? { userId: session.userId, user: { organizationId: orgId } }
       : { user: { organizationId: orgId } }
+    const statsDb = prismaDirect ?? prisma
 
     const [usersCount, totalProjects, statusGroups, projectDates] = await Promise.all([
       isUserRole
         ? Promise.resolve(0)
-        : prisma.user.count({ where: { organizationId: orgId } }),
-      prisma.project.count({ where: projectWhere }),
-      prisma.project.groupBy({
+        : statsDb.user.count({ where: { organizationId: orgId } }),
+      statsDb.project.count({ where: projectWhere }),
+      statsDb.project.groupBy({
         by: ['status'],
         where: projectWhere,
         _count: { id: true },
       }),
-      prisma.project.findMany({
+      statsDb.project.findMany({
         where: projectWhere,
         select: { createdAt: true },
       }),

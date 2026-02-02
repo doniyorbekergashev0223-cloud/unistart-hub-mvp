@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { prismaDirect } from '@/lib/prismaDirect'
 import { prisma } from '@/lib/db'
 import { getStats, setStats, publicStatsKey } from '@/lib/statsCache'
 
@@ -83,7 +84,8 @@ export async function GET() {
     return jsonResponse(safe)
   }
 
-  if (!prisma) {
+  const db = prismaDirect ?? prisma
+  if (!db) {
     const fallback = getStats<PublicStatsPayload>(cacheKey)
     if (fallback != null && fallback.data) return jsonResponse(fallback)
     return emptyResponse()
@@ -91,14 +93,14 @@ export async function GET() {
 
   try {
     const [usersCount, totalProjects, userDates, statusCounts, youthAgencyUsersCount] = await Promise.all([
-      prisma.user.count(),
-      prisma.project.count(),
-      prisma.user.findMany({ select: { createdAt: true } }),
-      prisma.project.groupBy({
+      db.user.count(),
+      db.project.count(),
+      db.user.findMany({ select: { createdAt: true } }),
+      db.project.groupBy({
         by: ['status'],
         _count: { id: true },
       }),
-      prisma.user.count({
+      db.user.count({
         where: { organization: { slug: 'youth-agency' } },
       }),
     ])

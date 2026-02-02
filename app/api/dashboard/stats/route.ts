@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { prismaDirect } from '@/lib/prismaDirect'
 import { getSession } from '@/lib/auth'
 import { getStats, setStats, dashboardStatsKey } from '@/lib/statsCache'
 
@@ -79,14 +80,15 @@ export async function GET(req: Request) {
 
     const orgWhereProject = { user: { organizationId: orgId } }
     const orgWhereUser = { organizationId: orgId }
+    const statsDb = prismaDirect ?? prisma
 
     const [usersCount, totalProjects, activeProjects, rejectedProjects] = await Promise.all([
-      prisma.user.count({ where: orgWhereUser }),
-      prisma.project.count({ where: orgWhereProject }),
-      prisma.project.count({
+      statsDb.user.count({ where: orgWhereUser }),
+      statsDb.project.count({ where: orgWhereProject }),
+      statsDb.project.count({
         where: { ...orgWhereProject, status: 'JARAYONDA' },
       }),
-      prisma.project.count({
+      statsDb.project.count({
         where: { ...orgWhereProject, status: 'RAD_ETILDI' },
       }),
     ])
