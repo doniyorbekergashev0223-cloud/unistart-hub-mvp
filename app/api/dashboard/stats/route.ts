@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prismaDirect } from '@/lib/prismaDirect'
+import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { getStats, setStats, dashboardStatsKey } from '@/lib/statsCache'
 
@@ -46,11 +46,7 @@ export async function GET(req: Request) {
       return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.")
     }
 
-    if (!prismaDirect) {
-      return emptyStats()
-    }
-
-    const dbUser = await prismaDirect.user.findUnique({
+    const dbUser = await prisma.user.findUnique({
       where: { id: session.userId },
       select: { organizationId: true },
     })
@@ -81,12 +77,12 @@ export async function GET(req: Request) {
     const orgWhereUser = { organizationId: orgId }
 
     const [usersCount, totalProjects, activeProjects, rejectedProjects] = await Promise.all([
-      prismaDirect.user.count({ where: orgWhereUser }),
-      prismaDirect.project.count({ where: orgWhereProject }),
-      prismaDirect.project.count({
+      prisma.user.count({ where: orgWhereUser }),
+      prisma.project.count({ where: orgWhereProject }),
+      prisma.project.count({
         where: { ...orgWhereProject, status: 'JARAYONDA' },
       }),
-      prismaDirect.project.count({
+      prisma.project.count({
         where: { ...orgWhereProject, status: 'RAD_ETILDI' },
       }),
     ])

@@ -9,11 +9,6 @@ export async function logAuditEvent(
   metadata?: Record<string, unknown>
 ): Promise<void> {
   const prisma = getPrisma();
-  if (!prisma) {
-    // Graceful degradation: if DB not configured, skip logging
-    return;
-  }
-
   try {
     await prisma.auditLog.create({
       data: {
