@@ -83,6 +83,12 @@ export async function GET() {
     return jsonResponse(safe)
   }
 
+  if (!prisma) {
+    const fallback = getStats<PublicStatsPayload>(cacheKey)
+    if (fallback != null && fallback.data) return jsonResponse(fallback)
+    return emptyResponse()
+  }
+
   try {
     const [usersCount, totalProjects, userDates, statusCounts, youthAgencyUsersCount] = await Promise.all([
       prisma.user.count(),

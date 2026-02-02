@@ -46,6 +46,10 @@ export async function GET(req: Request) {
       return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.")
     }
 
+    if (!prisma) {
+      return emptyStats()
+    }
+
     const dbUser = await prisma.user.findUnique({
       where: { id: session.userId },
       select: { organizationId: true },
