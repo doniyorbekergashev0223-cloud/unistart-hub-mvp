@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "description": "UniStart Hub - Platform for startup ideas",
   "private": true,
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
