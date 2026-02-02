@@ -33,12 +33,13 @@ export default function PublicDashboardCharts({
       <div className="public-chart-card">
         <h3 className="public-chart-title">{t('public.usersGrowth')}</h3>
         {userGrowthData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart
-              data={userGrowthData}
-              margin={{ top: 16, right: 16, left: 0, bottom: 8 }}
-              barCategoryGap="20%"
-            >
+          <div className="public-chart-inner">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={userGrowthData}
+                margin={{ top: 16, right: 16, left: 0, bottom: 8 }}
+                barCategoryGap="20%"
+              >
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
               <XAxis dataKey="month" stroke="#64748b" style={{ fontSize: 12 }} />
               <YAxis stroke="#64748b" style={{ fontSize: 12 }} />
@@ -62,7 +63,8 @@ export default function PublicDashboardCharts({
                 animationEasing="ease-out"
               />
             </BarChart>
-          </ResponsiveContainer>
+            </ResponsiveContainer>
+          </div>
         ) : (
           <div className="public-chart-empty">{t('public.noDataYet')}</div>
         )}
@@ -70,7 +72,8 @@ export default function PublicDashboardCharts({
       <div className="public-chart-card">
         <h3 className="public-chart-title">{t('dashboard.chartByStatus')}</h3>
         {pieData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={280}>
+          <div className="public-chart-inner">
+            <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={pieData}
@@ -104,7 +107,8 @@ export default function PublicDashboardCharts({
                 wrapperStyle={{ fontSize: 14, color: '#64748b' }}
               />
             </PieChart>
-          </ResponsiveContainer>
+            </ResponsiveContainer>
+          </div>
         ) : (
           <div className="public-chart-empty">{t('public.noDataYet')}</div>
         )}
