@@ -221,8 +221,9 @@
   .public-header {
     width: 100%;
     max-width: 100vw;
-    overflow-x: hidden;
+    overflow: visible;
     box-sizing: border-box;
+    z-index: 1000;
   }
 
   .public-header-inner {
@@ -259,6 +260,7 @@
   .public-locale-mobile {
     position: relative;
     display: block;
+    z-index: 1100;
   }
 
   .public-locale-trigger {
@@ -292,7 +294,7 @@
     border: 1px solid var(--pd-border);
     border-radius: var(--radius-button);
     box-shadow: var(--shadow-card-hover);
-    z-index: 100;
+    z-index: 1200;
     padding: 0.25rem;
     display: flex;
     flex-direction: column;
@@ -453,12 +455,9 @@
     padding: var(--content-padding-mobile);
   }
 
-  /* Tahlil va ko'rsatkichlar — mobile: vertical stack, full-width cards, no overflow */
+  /* Tahlil va ko'rsatkichlar — mobil da butunlay yashiriladi */
   .public-charts-section {
-    width: 100%;
-    max-width: 100%;
-    overflow: hidden;
-    box-sizing: border-box;
+    display: none !important;
   }
 
   .public-charts-grid {
