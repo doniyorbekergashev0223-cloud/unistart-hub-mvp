@@ -510,6 +510,12 @@
     min-width: 0;
   }
 
+  .public-chart-card .recharts-wrapper,
+  .public-chart-card .recharts-surface {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
   .public-chart-title {
     max-width: 100%;
     overflow-wrap: break-word;
@@ -525,6 +531,166 @@
 @media (min-width: 768px) {
   .public-locale-mobile {
     display: none !important;
+  }
+}
+
+/* 900px gacha: tashkilotlar Logo+Nom, grafiklar to‘liq ko‘rinsin */
+@media (max-width: 900px) {
+  .public-main {
+    overflow-x: hidden;
+    box-sizing: border-box;
+    padding-left: var(--content-padding-mobile);
+    padding-right: var(--content-padding-mobile);
+  }
+
+  .public-section-title {
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .public-logos-section {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .public-logos-grid {
+    grid-template-columns: 1fr;
+    gap: var(--grid-gap-mobile);
+    width: 100%;
+    min-width: 0;
+  }
+
+  .public-logo-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    padding: var(--card-padding-mobile);
+    min-height: 88px;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: var(--radius-card);
+    background: var(--pd-card);
+    backdrop-filter: blur(var(--blur-card));
+    border: 1px solid var(--pd-border);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    position: relative;
+    transition: all var(--transition-smooth);
+  }
+
+  .public-logo-item::after {
+    display: none;
+  }
+
+  .public-logo-img-wrap {
+    order: 1;
+    flex-shrink: 0;
+    width: var(--stat-icon-size-mobile);
+    height: var(--stat-icon-size-mobile);
+    min-width: var(--stat-icon-size-mobile);
+    min-height: var(--stat-icon-size-mobile);
+    margin-right: var(--stat-icon-gap);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0;
+    box-sizing: border-box;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .public-logo-name {
+    order: 2;
+    flex: 1;
+    min-width: 0;
+    padding-left: 0;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--pd-text);
+    line-height: 1.4;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    -webkit-line-clamp: none;
+    line-clamp: unset;
+    display: block;
+    overflow: visible;
+  }
+
+  .public-logo-item--larger.public-logo-item .public-logo-img-wrap,
+  .public-logo-item--larger .public-logo-img-wrap {
+    width: var(--stat-icon-size-mobile);
+    height: var(--stat-icon-size-mobile);
+    min-width: var(--stat-icon-size-mobile);
+    min-height: var(--stat-icon-size-mobile);
+  }
+
+  .public-logo-img,
+  .public-logo-item--larger .public-logo-img {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  /* Tahlil va ko'rsatkichlar — grafiklar o‘ng tomondan kesilmasin (900px gacha) */
+  .public-charts-section {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .public-charts-grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .public-chart-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: var(--card-padding-mobile);
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .public-chart-inner {
+    width: 100%;
+    max-width: 100%;
+    height: 260px;
+    min-width: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .public-chart-card .recharts-responsive-container {
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .public-chart-card .recharts-wrapper,
+  .public-chart-card .recharts-surface {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .public-chart-title {
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 }
 
