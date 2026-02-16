@@ -47,11 +47,12 @@ export async function GET(req: Request) {
       return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.")
     }
 
-    if (!prisma) {
+    const db = prisma ?? prismaDirect
+    if (!db) {
       return emptyStats()
     }
 
-    const dbUser = await prisma.user.findUnique({
+    const dbUser = await db.user.findUnique({
       where: { id: session.userId },
       select: { organizationId: true },
     })
@@ -66,29 +67,19 @@ export async function GET(req: Request) {
     try {
       cached = getStats(cacheKey)
     } catch {
-      // cache read failed, proceed to DB
-    }
-    if (cached) {
-      return NextResponse.json(cached, {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-          Pragma: 'no-cache',
-          Expires: '0',
-        },
-      })
+      // cache read failed
     }
 
     const orgWhereProject = { user: { organizationId: orgId } }
     const orgWhereUser = { organizationId: orgId }
-    const statsDb = prismaDirect ?? prisma
 
     const [usersCount, totalProjects, activeProjects, rejectedProjects] = await Promise.all([
-      statsDb.user.count({ where: orgWhereUser }),
-      statsDb.project.count({ where: orgWhereProject }),
-      statsDb.project.count({
+      db.user.count({ where: orgWhereUser }),
+      db.project.count({ where: orgWhereProject }),
+      db.project.count({
         where: { ...orgWhereProject, status: 'JARAYONDA' },
       }),
-      statsDb.project.count({
+      db.project.count({
         where: { ...orgWhereProject, status: 'RAD_ETILDI' },
       }),
     ])

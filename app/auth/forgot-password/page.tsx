@@ -55,7 +55,7 @@ const ForgotPasswordPage = () => {
       <div className="auth-page">
         <div className="auth-container">
           <div className="auth-header">
-            <h1>{t('public.heroTitle')} <span className="logo-orange">Hub</span></h1>
+            <h1>{t('nav.logoPart1')} <span className="auth-logo-accent">{t('nav.logoPart2')}</span></h1>
             <h2>{t('auth.codeSent')}</h2>
             <p>{t('auth.codeSentSubtitle')}</p>
           </div>
@@ -79,7 +79,7 @@ const ForgotPasswordPage = () => {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-header">
-          <h1>{t('public.heroTitle')} <span className="logo-orange">Hub</span></h1>
+          <h1>{t('nav.logoPart1')} <span className="auth-logo-accent">{t('nav.logoPart2')}</span></h1>
           <h2>{t('auth.resetPassword')}</h2>
           <p>{t('auth.email')}</p>
         </div>

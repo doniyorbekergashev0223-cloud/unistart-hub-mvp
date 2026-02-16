@@ -399,16 +399,16 @@ export default function PublicDashboard() {
           </h2>
           <div className="public-logos-grid">
             {PARTNER_ORGANIZATIONS.map((org) => (
-              <div key={org.slug} className={`public-logo-item ${org.slug === 'sambhram' ? 'public-logo-item--larger' : ''}`}>
+              <div key={org.slug} className="public-logo-item">
                 <div className="public-logo-img-wrap">
                   <Image
                     src={org.logoUrl}
                     alt={org.name}
-                    width={200}
-                    height={80}
+                    width={160}
+                    height={100}
                     className="public-logo-img"
                     loading="lazy"
-                    sizes="(max-width: 767px) 48px, 200px"
+                    sizes="(max-width: 767px) 48px, 160px"
                   />
                 </div>
                 <span className="public-logo-name">{org.name}</span>

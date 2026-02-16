@@ -42,7 +42,7 @@
 
 .admin-projects-tbody td {
   padding: 1rem var(--content-padding-x);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.4);
+  border-bottom: 1px solid rgba(20, 22, 26, 0.4);
   vertical-align: middle;
 }
 

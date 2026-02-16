@@ -6,8 +6,9 @@ import { getStats, setStats, publicStatsKey } from '@/lib/statsCache'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const PARTNER_UNIVERSITIES_COUNT = 5
-const JAMI_TASHKILOTLAR = 6
+/** Fallback faqat DB mavjud emas yoki xato bo'lganda */
+const FALLBACK_ORGANIZATIONS = 0
+const FALLBACK_UNIVERSITIES = 0
 
 type PublicStatsData = {
   usersCount: number
@@ -28,8 +29,8 @@ const EMPTY_DATA: PublicStatsData = {
   totalProjects: 0,
   activeProjects: 0,
   rejectedProjects: 0,
-  organizationsCount: JAMI_TASHKILOTLAR,
-  universitiesCount: PARTNER_UNIVERSITIES_COUNT,
+  organizationsCount: FALLBACK_ORGANIZATIONS,
+  universitiesCount: FALLBACK_UNIVERSITIES,
   youthAgencyUsersCount: 0,
   userGrowthByMonth: [],
   projectsByStatus: { jarayonda: 0, qabulQilindi: 0, radEtildi: 0 },
@@ -50,49 +51,55 @@ function jsonResponse(payload: PublicStatsPayload): NextResponse {
   })
 }
 
+function normalizeCached(cached: PublicStatsPayload): PublicStatsPayload {
+  const d = cached.data
+  return {
+    ok: true,
+    data: {
+      usersCount: typeof d.usersCount === 'number' ? d.usersCount : 0,
+      totalProjects: typeof d.totalProjects === 'number' ? d.totalProjects : 0,
+      activeProjects: typeof d.activeProjects === 'number' ? d.activeProjects : (d.projectsByStatus?.jarayonda ?? 0),
+      rejectedProjects: typeof d.rejectedProjects === 'number' ? d.rejectedProjects : (d.projectsByStatus?.radEtildi ?? 0),
+      organizationsCount: typeof d.organizationsCount === 'number' ? d.organizationsCount : FALLBACK_ORGANIZATIONS,
+      universitiesCount: typeof d.universitiesCount === 'number' ? d.universitiesCount : FALLBACK_UNIVERSITIES,
+      youthAgencyUsersCount: typeof d.youthAgencyUsersCount === 'number' ? d.youthAgencyUsersCount : 0,
+      userGrowthByMonth: Array.isArray(d.userGrowthByMonth) ? d.userGrowthByMonth : [],
+      projectsByStatus: d.projectsByStatus && typeof d.projectsByStatus === 'object'
+        ? {
+            jarayonda: typeof d.projectsByStatus.jarayonda === 'number' ? d.projectsByStatus.jarayonda : 0,
+            qabulQilindi: typeof d.projectsByStatus.qabulQilindi === 'number' ? d.projectsByStatus.qabulQilindi : 0,
+            radEtildi: typeof d.projectsByStatus.radEtildi === 'number' ? d.projectsByStatus.radEtildi : 0,
+          }
+        : { jarayonda: 0, qabulQilindi: 0, radEtildi: 0 },
+    },
+  }
+}
+
 export async function GET() {
   const cacheKey = publicStatsKey()
-
   let cached: PublicStatsPayload | null = null
   try {
     cached = getStats<PublicStatsPayload>(cacheKey)
   } catch {
-    // cache read failed, proceed to DB
-  }
-  if (cached != null && typeof cached.ok === 'boolean' && cached.ok === true && cached.data != null) {
-    const d = cached.data
-    const safe: PublicStatsPayload = {
-      ok: true,
-      data: {
-        usersCount: typeof d.usersCount === 'number' ? d.usersCount : 0,
-        totalProjects: typeof d.totalProjects === 'number' ? d.totalProjects : 0,
-        activeProjects: typeof d.activeProjects === 'number' ? d.activeProjects : (d.projectsByStatus?.jarayonda ?? 0),
-        rejectedProjects: typeof d.rejectedProjects === 'number' ? d.rejectedProjects : (d.projectsByStatus?.radEtildi ?? 0),
-        organizationsCount: typeof d.organizationsCount === 'number' ? d.organizationsCount : JAMI_TASHKILOTLAR,
-        universitiesCount: typeof d.universitiesCount === 'number' ? d.universitiesCount : PARTNER_UNIVERSITIES_COUNT,
-        youthAgencyUsersCount: typeof d.youthAgencyUsersCount === 'number' ? d.youthAgencyUsersCount : 0,
-        userGrowthByMonth: Array.isArray(d.userGrowthByMonth) ? d.userGrowthByMonth : [],
-        projectsByStatus: d.projectsByStatus && typeof d.projectsByStatus === 'object'
-          ? {
-              jarayonda: typeof d.projectsByStatus.jarayonda === 'number' ? d.projectsByStatus.jarayonda : 0,
-              qabulQilindi: typeof d.projectsByStatus.qabulQilindi === 'number' ? d.projectsByStatus.qabulQilindi : 0,
-              radEtildi: typeof d.projectsByStatus.radEtildi === 'number' ? d.projectsByStatus.radEtildi : 0,
-            }
-          : { jarayonda: 0, qabulQilindi: 0, radEtildi: 0 },
-      },
-    }
-    return jsonResponse(safe)
+    // cache read failed
   }
 
-  const db = prismaDirect ?? prisma
+  const db = prisma ?? prismaDirect
   if (!db) {
-    const fallback = getStats<PublicStatsPayload>(cacheKey)
-    if (fallback != null && fallback.data) return jsonResponse(fallback)
+    if (cached != null && cached.data) return jsonResponse(normalizeCached(cached))
     return emptyResponse()
   }
 
   try {
-    const [usersCount, totalProjects, userDates, statusCounts, youthAgencyUsersCount] = await Promise.all([
+    const [
+      usersCount,
+      totalProjects,
+      userDates,
+      statusCounts,
+      youthAgencyUsersCount,
+      organizationsCount,
+      youthAgencyOrgCount,
+    ] = await Promise.all([
       db.user.count(),
       db.project.count(),
       db.user.findMany({ select: { createdAt: true } }),
@@ -103,7 +110,10 @@ export async function GET() {
       db.user.count({
         where: { organization: { slug: 'youth-agency' } },
       }),
+      db.organization.count(),
+      db.organization.count({ where: { slug: 'youth-agency' } }),
     ])
+    const universitiesCount = Math.max(0, organizationsCount - youthAgencyOrgCount)
 
     const monthMap = new Map<string, number>()
     const monthNames = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr']
@@ -139,8 +149,8 @@ export async function GET() {
         totalProjects: Number(totalProjects),
         activeProjects: jarayonda,
         rejectedProjects: radEtildi,
-        organizationsCount: JAMI_TASHKILOTLAR,
-        universitiesCount: PARTNER_UNIVERSITIES_COUNT,
+        organizationsCount: Number(organizationsCount),
+        universitiesCount,
         youthAgencyUsersCount: Number(youthAgencyUsersCount),
         userGrowthByMonth,
         projectsByStatus,
@@ -152,9 +162,11 @@ export async function GET() {
       // cache write failed
     }
     return jsonResponse(payload)
-  } catch (_err) {
-    const fallback = getStats<PublicStatsPayload>(cacheKey)
-    if (fallback != null && fallback.data) return jsonResponse(fallback)
+  } catch (err) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Public stats DB error:', err)
+    }
+    if (cached != null && cached.data) return jsonResponse(normalizeCached(cached))
     return emptyResponse()
   }
 }

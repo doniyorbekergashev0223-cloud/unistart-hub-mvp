@@ -49,11 +49,12 @@ export async function GET(req: Request) {
       return jsonError(401, 'UNAUTHORIZED', "Kirish talab qilinadi.")
     }
 
-    if (!prisma) {
+    const db = prisma ?? prismaDirect
+    if (!db) {
       return emptyData(session.role)
     }
 
-    const dbUser = await prisma.user.findUnique({
+    const dbUser = await db.user.findUnique({
       where: { id: session.userId },
       select: { organizationId: true },
     })
@@ -65,37 +66,22 @@ export async function GET(req: Request) {
     const orgId = dbUser.organizationId
     const isUserRole = session.role === 'user'
     const cacheKey = orgStatsKey(orgId, session.role, session.userId)
-    let cached: { ok: true; data: Record<string, unknown> } | null = null
-    try {
-      cached = getStats(cacheKey)
-    } catch {
-      // cache read failed, proceed to DB
-    }
-    if (cached) {
-      return NextResponse.json(cached, {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-          Pragma: 'no-cache',
-        },
-      })
-    }
 
     const projectWhere = isUserRole
       ? { userId: session.userId, user: { organizationId: orgId } }
       : { user: { organizationId: orgId } }
-    const statsDb = prismaDirect ?? prisma
 
     const [usersCount, totalProjects, statusGroups, projectDates] = await Promise.all([
       isUserRole
         ? Promise.resolve(0)
-        : statsDb.user.count({ where: { organizationId: orgId } }),
-      statsDb.project.count({ where: projectWhere }),
-      statsDb.project.groupBy({
+        : db.user.count({ where: { organizationId: orgId } }),
+      db.project.count({ where: projectWhere }),
+      db.project.groupBy({
         by: ['status'],
         where: projectWhere,
         _count: { id: true },
       }),
-      statsDb.project.findMany({
+      db.project.findMany({
         where: projectWhere,
         select: { createdAt: true },
       }),
